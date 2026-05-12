@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nexus Next
+
+Nexus Next is a modern multi-model AI chat workspace built with Next.js 16, React 19, Clerk, OpenRouter, and Supabase-ready architecture.
+
+The project currently focuses on a clean chat foundation: streaming responses, model switching, authentication UI, markdown rendering, local chat persistence, and a componentized App Router structure that can grow into database sync, search, uploads, RAG, and agents.
+
+## Features
+
+- Multi-model chat through OpenRouter
+- Streaming assistant responses
+- Local chat history persistence
+- Chat create, rename, delete, regenerate, and stop-generation controls
+- Markdown rendering with GitHub Flavored Markdown support
+- Clerk authentication UI
+- Next.js 16 `proxy.ts` convention
+- Componentized chat UI and extracted hooks
+- Supabase client foundation for future database persistence
+
+## Tech Stack
+
+- Next.js 16 App Router
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- Clerk
+- OpenRouter
+- Supabase
+- React Markdown
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Create your local environment file:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cp .env.example .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Fill in the required values in `.env.local`:
 
-## Learn More
+```env
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
+OPENROUTER_API_KEY=
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
 
-To learn more about Next.js, take a look at the following resources:
+Start the development server:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+pnpm dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Open [http://localhost:3000](http://localhost:3000).
 
-## Deploy on Vercel
+## Scripts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+pnpm dev
+pnpm build
+pnpm start
+pnpm lint
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project Structure
+
+```txt
+app/
+  api/chat/route.ts
+  components/chat/
+  components/layout/
+  hooks/
+  types/
+lib/
+  ai/
+  markdown/
+  supabase.ts
+proxy.ts
+```
+
+Important modules:
+
+- `app/hooks/useChats.ts` manages local chat state and persistence.
+- `app/hooks/useStreamingChat.ts` manages send, stream, abort, and error state.
+- `lib/ai/models.ts` defines the available model registry.
+- `lib/ai/openrouter.ts` owns OpenRouter API integration.
+- `lib/markdown/renderer.tsx` owns markdown rendering.
+
+## Environment Safety
+
+Do not commit `.env.local` or any real secret values. The repository includes `.env.example` only as a safe template.
+
+## Roadmap
+
+- Supabase database persistence for chats and messages
+- User chat sync after sign-in
+- Message search
+- Settings panel for model behavior, system prompt, and theme
+- File and image attachments
+- Chat export to Markdown, JSON, and PDF
+- RAG and agent workflows
+- Public landing page
+- Vercel deployment
