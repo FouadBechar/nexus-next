@@ -15,7 +15,7 @@ export function Header({ isSignedIn, onOpenSidebar }: HeaderProps) {
           ☰
         </button>
 
-        <h1 className="font-semibold">Nexus Next ⚡</h1>
+        <h1 className="font-semibold">Nexus Next</h1>
       </div>
 
       <div className="flex items-center gap-3">
