@@ -16,7 +16,7 @@ import { useStreamingChat } from "./hooks/useStreamingChat";
 import { DEFAULT_MODEL_ID, MODELS } from "../lib/ai/models";
 
 export default function Home() {
-  const { isSignedIn } = useUser();
+  const { isLoaded, isSignedIn, user } = useUser();
 
   const [input, setInput] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -33,7 +33,7 @@ export default function Home() {
     renameChat,
     setActiveChatId,
     updateChatMessages,
-  } = useChats();
+  } = useChats(isSignedIn ? user?.id ?? null : null, isLoaded);
 
   const {
     currentResponse,

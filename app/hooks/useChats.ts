@@ -8,7 +8,7 @@ const CHAT_STORAGE_KEY = "nexus-chats";
 
 function createChat(title = "New Chat"): Chat {
   return {
-    id: Date.now().toString(),
+    id: globalThis.crypto?.randomUUID?.() ?? Date.now().toString(),
     title,
     messages: [],
   };
@@ -58,6 +58,9 @@ type ChatAction =
       id: string;
       messages: Message[];
       title?: string;
+    }
+  | {
+      type: "set-hydrated";
     };
 
 const initialState: ChatState = {
@@ -139,22 +142,96 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
             : chat
         ),
       };
+
+    case "set-hydrated":
+      return {
+        ...state,
+        hydrated: true,
+      };
   }
 }
 
-export function useChats() {
+async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, init);
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  return response.json() as Promise<T>;
+}
+
+async function createRemoteChat(chat: Chat) {
+  return requestJson<{ chat: Chat }>("/api/chats", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      id: chat.id,
+      title: chat.title,
+    }),
+  });
+}
+
+export function useChats(userId?: string | null, authLoaded = true) {
   const [state, dispatch] = useReducer(chatReducer, initialState);
+  const remoteEnabled = Boolean(userId);
 
   useEffect(() => {
-    const savedChats = parseSavedChats(localStorage.getItem(CHAT_STORAGE_KEY));
-    dispatch({ type: "hydrate", chats: savedChats });
-  }, []);
+    if (!authLoaded) return;
+
+    let cancelled = false;
+
+    async function hydrateChats() {
+      try {
+        if (remoteEnabled) {
+          const { chats } = await requestJson<{ chats: Chat[] }>("/api/chats");
+
+          if (cancelled) return;
+
+          if (chats.length > 0) {
+            dispatch({ type: "hydrate", chats });
+            return;
+          }
+
+          const firstChat = createChat();
+          await createRemoteChat(firstChat);
+
+          if (!cancelled) {
+            dispatch({ type: "hydrate", chats: [firstChat] });
+          }
+
+          return;
+        }
+
+        const savedChats = parseSavedChats(localStorage.getItem(CHAT_STORAGE_KEY));
+
+        if (!cancelled) {
+          dispatch({ type: "hydrate", chats: savedChats });
+        }
+      } catch (error) {
+        console.error(error);
+
+        if (!cancelled) {
+          const savedChats = parseSavedChats(localStorage.getItem(CHAT_STORAGE_KEY));
+          dispatch({ type: "hydrate", chats: savedChats });
+        }
+      }
+    }
+
+    hydrateChats();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoaded, remoteEnabled]);
 
   useEffect(() => {
-    if (!state.hydrated) return;
+    if (!state.hydrated || remoteEnabled) return;
 
     localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(state.chats));
-  }, [state.chats, state.hydrated]);
+  }, [remoteEnabled, state.chats, state.hydrated]);
 
   const activeChat = useMemo(
     () => state.chats.find((chat) => chat.id === state.activeChatId),
@@ -169,15 +246,25 @@ export function useChats() {
       chat: newChat,
     });
 
+    if (remoteEnabled) {
+      createRemoteChat(newChat).catch(console.error);
+    }
+
     return newChat;
-  }, []);
+  }, [remoteEnabled]);
 
   const deleteChat = useCallback((id: string) => {
     dispatch({
       type: "delete",
       id,
     });
-  }, []);
+
+    if (remoteEnabled) {
+      fetch(`/api/chats/${id}`, {
+        method: "DELETE",
+      }).catch(console.error);
+    }
+  }, [remoteEnabled]);
 
   const renameChat = useCallback((id: string, title: string) => {
     const trimmedTitle = title.trim();
@@ -189,7 +276,19 @@ export function useChats() {
       id,
       title: trimmedTitle,
     });
-  }, []);
+
+    if (remoteEnabled) {
+      fetch(`/api/chats/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: trimmedTitle,
+        }),
+      }).catch(console.error);
+    }
+  }, [remoteEnabled]);
 
   const updateChatMessages = useCallback(
     (id: string, messages: Message[], title?: string) => {
@@ -199,8 +298,21 @@ export function useChats() {
         messages,
         title,
       });
+
+      if (remoteEnabled) {
+        fetch(`/api/chats/${id}/messages`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messages,
+            title,
+          }),
+        }).catch(console.error);
+      }
     },
-    []
+    [remoteEnabled]
   );
 
   const setActiveChatId = useCallback((id: string) => {
