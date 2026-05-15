@@ -4,11 +4,13 @@ import { streamOpenRouterChat } from "../../../lib/ai/openrouter";
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, model } = await req.json();
+    const { messages, model, systemPrompt, temperature } = await req.json();
 
     return streamOpenRouterChat({
       messages,
       model: model || DEFAULT_MODEL_ID,
+      systemPrompt,
+      temperature,
     });
   } catch (error) {
     console.error(error);

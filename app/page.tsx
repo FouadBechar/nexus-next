@@ -7,20 +7,22 @@ import { ChatMessage } from "./components/chat/ChatMessage";
 import { ChatSidebar } from "./components/chat/ChatSidebar";
 import { EmptyState } from "./components/chat/EmptyState";
 import { ModelSelector } from "./components/chat/ModelSelector";
+import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { StreamingMessage } from "./components/chat/StreamingMessage";
 import { TypingIndicator } from "./components/chat/TypingIndicator";
 import { Header } from "./components/layout/Header";
 import { useAutoScroll } from "./hooks/useAutoScroll";
+import { useChatSettings } from "./hooks/useChatSettings";
 import { useChats } from "./hooks/useChats";
 import { useStreamingChat } from "./hooks/useStreamingChat";
-import { DEFAULT_MODEL_ID, MODELS } from "../lib/ai/models";
+import { MODELS } from "../lib/ai/models";
 
 export default function Home() {
   const { isLoaded, isSignedIn, user } = useUser();
 
   const [input, setInput] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL_ID);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -34,6 +36,7 @@ export default function Home() {
     setActiveChatId,
     updateChatMessages,
   } = useChats(isSignedIn ? user?.id ?? null : null, isLoaded);
+  const { resetSettings, settings, updateSettings } = useChatSettings();
 
   const {
     currentResponse,
@@ -70,7 +73,7 @@ export default function Home() {
       activeChat,
       activeChatId,
       text: customText || input,
-      model: selectedModel,
+      settings,
       onClearInput: () => setInput(""),
       updateChatMessages,
     });
@@ -109,12 +112,13 @@ export default function Home() {
         <Header
           isSignedIn={isSignedIn}
           onOpenSidebar={() => setSidebarOpen(true)}
+          onOpenSettings={() => setSettingsOpen(true)}
         />
 
         <ModelSelector
           models={MODELS}
-          selectedModel={selectedModel}
-          onChange={setSelectedModel}
+          selectedModel={settings.model}
+          onChange={(model) => updateSettings({ model })}
         />
 
         {activeChat?.messages.length === 0 && <EmptyState />}
@@ -145,6 +149,15 @@ export default function Home() {
           onStop={stopGeneration}
         />
       </section>
+
+      <SettingsPanel
+        models={MODELS}
+        open={settingsOpen}
+        settings={settings}
+        onClose={() => setSettingsOpen(false)}
+        onReset={resetSettings}
+        onUpdate={updateSettings}
+      />
     </main>
   );
 }

@@ -3,12 +3,13 @@
 import { useRef, useState } from "react";
 import type { Chat } from "../types/chat";
 import type { Message } from "../types/message";
+import type { ChatSettings } from "../types/settings";
 
 type SendMessageOptions = {
   activeChat: Chat | undefined;
   activeChatId: string;
   text: string;
-  model: string;
+  settings: ChatSettings;
   onClearInput: () => void;
   updateChatMessages: (id: string, messages: Message[], title?: string) => void;
 };
@@ -28,7 +29,7 @@ export function useStreamingChat() {
     activeChat,
     activeChatId,
     text,
-    model,
+    settings,
     onClearInput,
     updateChatMessages,
   }: SendMessageOptions) {
@@ -64,7 +65,9 @@ export function useStreamingChat() {
         },
         body: JSON.stringify({
           messages: updatedMessages,
-          model,
+          model: settings.model,
+          systemPrompt: settings.systemPrompt,
+          temperature: settings.temperature,
         }),
         signal: controller.signal,
       });

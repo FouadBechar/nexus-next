@@ -8,6 +8,8 @@ type OpenRouterMessage = {
 type StreamOpenRouterChatOptions = {
   messages: OpenRouterMessage[];
   model: string;
+  systemPrompt?: string;
+  temperature?: number;
 };
 
 function getOpenRouterApiKey() {
@@ -23,7 +25,24 @@ function getOpenRouterApiKey() {
 export async function streamOpenRouterChat({
   messages,
   model,
+  systemPrompt,
+  temperature,
 }: StreamOpenRouterChatOptions) {
+  const trimmedSystemPrompt = systemPrompt?.trim();
+  const requestMessages = trimmedSystemPrompt
+    ? [
+        {
+          role: "system" as const,
+          content: trimmedSystemPrompt,
+        },
+        ...messages,
+      ]
+    : messages;
+  const safeTemperature =
+    typeof temperature === "number"
+      ? Math.min(2, Math.max(0, temperature))
+      : undefined;
+
   const response = await fetch(OPENROUTER_URL, {
     method: "POST",
     headers: {
@@ -34,7 +53,8 @@ export async function streamOpenRouterChat({
     },
     body: JSON.stringify({
       model,
-      messages,
+      messages: requestMessages,
+      ...(safeTemperature !== undefined ? { temperature: safeTemperature } : {}),
       stream: true,
     }),
   });
