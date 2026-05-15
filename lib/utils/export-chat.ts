@@ -32,6 +32,16 @@ export function chatToMarkdown(chat: Chat) {
       : "";
 
     lines.push(`## ${role}${timestamp}`, "", message.content, "");
+
+    if (message.attachments && message.attachments.length > 0) {
+      lines.push("Attachments:", "");
+
+      for (const attachment of message.attachments) {
+        lines.push(`- [${attachment.fileName}](${attachment.url})`);
+      }
+
+      lines.push("");
+    }
   }
 
   return lines.join("\n");

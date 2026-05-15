@@ -2,17 +2,52 @@
 
 import { useRef, useState } from "react";
 import type { Chat } from "../types/chat";
-import type { Message } from "../types/message";
+import type { Message, MessageAttachment } from "../types/message";
 import type { ChatSettings } from "../types/settings";
 
 type SendMessageOptions = {
   activeChat: Chat | undefined;
   activeChatId: string;
+  attachments?: File[];
   text: string;
   settings: ChatSettings;
   onClearInput: () => void;
   updateChatMessages: (id: string, messages: Message[], title?: string) => void;
 };
+
+async function uploadAttachment({
+  activeChatId,
+  content,
+  file,
+  messageId,
+}: {
+  activeChatId: string;
+  content: string;
+  file: File;
+  messageId: string;
+}) {
+  const formData = new FormData();
+
+  formData.append("chatId", activeChatId);
+  formData.append("content", content);
+  formData.append("messageId", messageId);
+  formData.append("file", file);
+
+  const response = await fetch("/api/attachments", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  const data = (await response.json()) as {
+    attachment: MessageAttachment;
+  };
+
+  return data.attachment;
+}
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
@@ -28,33 +63,49 @@ export function useStreamingChat() {
   async function sendMessage({
     activeChat,
     activeChatId,
+    attachments = [],
     text,
     settings,
     onClearInput,
     updateChatMessages,
   }: SendMessageOptions) {
-    if (!text.trim() || !activeChat || loading) return;
+    if ((!text.trim() && attachments.length === 0) || !activeChat || loading) {
+      return;
+    }
 
-    const userMessage: Message = {
-      role: "user",
-      content: text,
-      createdAt: new Date().toISOString(),
-    };
-
-    const updatedMessages = [...activeChat.messages, userMessage];
-    const nextTitle =
-      activeChat.messages.length === 0
-        ? text.slice(0, 30).trim() || "New Chat"
-        : activeChat.title;
-
-    updateChatMessages(activeChatId, updatedMessages, nextTitle);
-
-    onClearInput();
     setError("");
     setLoading(true);
     setCurrentResponse("");
 
     try {
+      const userMessageId = crypto.randomUUID();
+      const messageContent = text.trim() || "Attached files.";
+      const uploadedAttachments = await Promise.all(
+        attachments.map((file) =>
+          uploadAttachment({
+            activeChatId,
+            content: messageContent,
+            file,
+            messageId: userMessageId,
+          })
+        )
+      );
+      const userMessage: Message = {
+        id: userMessageId,
+        role: "user",
+        content: messageContent,
+        createdAt: new Date().toISOString(),
+        attachments: uploadedAttachments,
+      };
+      const updatedMessages = [...activeChat.messages, userMessage];
+      const nextTitle =
+        activeChat.messages.length === 0
+          ? messageContent.slice(0, 30).trim() || "New Chat"
+          : activeChat.title;
+
+      updateChatMessages(activeChatId, updatedMessages, nextTitle);
+      onClearInput();
+
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
@@ -120,6 +171,7 @@ export function useStreamingChat() {
       }
 
       const assistantMessage: Message = {
+        id: crypto.randomUUID(),
         role: "assistant",
         content: fullText,
         createdAt: new Date().toISOString(),

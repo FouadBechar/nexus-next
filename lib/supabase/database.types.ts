@@ -60,6 +60,60 @@ export type Database = {
           },
         ];
       };
+      message_attachments: {
+        Row: {
+          id: string;
+          user_id: string;
+          chat_id: string;
+          message_id: string | null;
+          bucket: string;
+          storage_path: string;
+          file_name: string;
+          mime_type: string;
+          file_size: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          chat_id: string;
+          message_id?: string | null;
+          bucket?: string;
+          storage_path: string;
+          file_name: string;
+          mime_type: string;
+          file_size: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          chat_id?: string;
+          message_id?: string | null;
+          bucket?: string;
+          storage_path?: string;
+          file_name?: string;
+          mime_type?: string;
+          file_size?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "message_attachments_chat_id_fkey";
+            columns: ["chat_id"];
+            isOneToOne: false;
+            referencedRelation: "chats";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "message_attachments_message_id_fkey";
+            columns: ["message_id"];
+            isOneToOne: false;
+            referencedRelation: "messages";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

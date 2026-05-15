@@ -12,10 +12,20 @@ type DbChat = {
 };
 
 type DbMessage = {
+  id: string;
   chat_id: string;
   role: Message["role"] | "system";
   content: string;
   created_at: string | null;
+};
+
+type DbAttachment = {
+  id: string;
+  message_id: string | null;
+  file_name: string;
+  mime_type: string;
+  file_size: number;
+  storage_path: string;
 };
 
 async function getCurrentUserId() {
@@ -28,22 +38,54 @@ async function getCurrentUserId() {
   return userId;
 }
 
-function toMessage(message: DbMessage): Message {
+async function toMessage(
+  message: DbMessage,
+  attachments: DbAttachment[]
+): Promise<Message> {
+  const supabase = getSupabaseAdmin();
+  const messageAttachments = attachments.filter(
+    (attachment) => attachment.message_id === message.id
+  );
+
   return {
+    id: message.id,
     role: message.role === "system" ? "assistant" : message.role,
     content: message.content,
     createdAt: message.created_at ?? undefined,
+    attachments: await Promise.all(
+      messageAttachments.map(async (attachment) => {
+        const { data } = await supabase.storage
+          .from("chat-attachments")
+          .createSignedUrl(attachment.storage_path, 60 * 60);
+
+        return {
+          id: attachment.id,
+          fileName: attachment.file_name,
+          mimeType: attachment.mime_type,
+          fileSize: attachment.file_size,
+          url: data?.signedUrl ?? "",
+        };
+      })
+    ),
   };
 }
 
-function toChats(chats: DbChat[], messages: DbMessage[]): Chat[] {
-  return chats.map((chat) => ({
-    id: chat.id,
-    title: chat.title,
-    messages: messages
-      .filter((message) => message.chat_id === chat.id)
-      .map(toMessage),
-  }));
+async function toChats(
+  chats: DbChat[],
+  messages: DbMessage[],
+  attachments: DbAttachment[]
+): Promise<Chat[]> {
+  return Promise.all(
+    chats.map(async (chat) => ({
+      id: chat.id,
+      title: chat.title,
+      messages: await Promise.all(
+        messages
+          .filter((message) => message.chat_id === chat.id)
+          .map((message) => toMessage(message, attachments))
+      ),
+    }))
+  );
 }
 
 export async function GET() {
@@ -67,15 +109,23 @@ export async function GET() {
 
     const { data: messages, error: messagesError } = await supabase
       .from("messages")
-      .select("chat_id,role,content,created_at")
+      .select("id,chat_id,role,content,created_at")
       .eq("user_id", userId)
       .in("chat_id", chatIds)
       .order("created_at", { ascending: true });
 
     if (messagesError) throw messagesError;
 
+    const { data: attachments, error: attachmentsError } = await supabase
+      .from("message_attachments")
+      .select("id,message_id,file_name,mime_type,file_size,storage_path")
+      .eq("user_id", userId)
+      .in("chat_id", chatIds);
+
+    if (attachmentsError) throw attachmentsError;
+
     return Response.json({
-      chats: toChats(chats ?? [], messages ?? []),
+      chats: await toChats(chats ?? [], messages ?? [], attachments ?? []),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to load chats.";

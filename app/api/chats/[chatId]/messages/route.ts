@@ -58,26 +58,22 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
       return new Response("Chat not found.", { status: 404 });
     }
 
-    const { error: deleteError } = await supabase
-      .from("messages")
-      .delete()
-      .eq("chat_id", chatId)
-      .eq("user_id", userId);
-
-    if (deleteError) throw deleteError;
-
     if (messages.length > 0) {
-      const { error: insertError } = await supabase.from("messages").insert(
+      const { error: upsertError } = await supabase.from("messages").upsert(
         messages.map((message: Message) => ({
+          id: message.id ?? crypto.randomUUID(),
           chat_id: chatId,
           user_id: userId,
           role: message.role,
           content: message.content,
           created_at: message.createdAt ?? now,
-        }))
+        })),
+        {
+          onConflict: "id",
+        }
       );
 
-      if (insertError) throw insertError;
+      if (upsertError) throw upsertError;
     }
 
     const { error: updateError } = await supabase

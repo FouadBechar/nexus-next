@@ -72,10 +72,11 @@ export default function Home() {
     renameChat(id, title);
   }
 
-  function handleSendMessage(customText?: string) {
-    sendMessage({
+  function handleSendMessage(customText?: string, files?: File[]) {
+    return sendMessage({
       activeChat,
       activeChatId,
+      attachments: files,
       text: customText || input,
       settings,
       onClearInput: () => setInput(""),
@@ -156,6 +157,7 @@ export default function Home() {
         </div>
 
         <ChatInput
+          attachmentsEnabled={Boolean(isSignedIn)}
           canExport={Boolean(activeChat?.messages.length)}
           error={error}
           input={input}
@@ -164,7 +166,7 @@ export default function Home() {
           onExportJson={exportJson}
           onExportMarkdown={exportMarkdown}
           onRegenerate={regenerateLast}
-          onSend={() => handleSendMessage()}
+          onSend={(files) => handleSendMessage(undefined, files)}
           onStop={stopGeneration}
         />
       </section>

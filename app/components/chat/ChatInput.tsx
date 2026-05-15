@@ -1,8 +1,9 @@
 "use client";
 
-import { KeyboardEvent, useEffect, useRef } from "react";
+import { KeyboardEvent, useEffect, useRef, useState } from "react";
 
 type ChatInputProps = {
+  attachmentsEnabled?: boolean;
   canExport?: boolean;
   error?: string;
   input: string;
@@ -11,11 +12,12 @@ type ChatInputProps = {
   onExportJson: () => void;
   onExportMarkdown: () => void;
   onRegenerate: () => void;
-  onSend: () => void;
+  onSend: (files?: File[]) => Promise<void> | void;
   onStop: () => void;
 };
 
 export function ChatInput({
+  attachmentsEnabled = false,
   canExport = false,
   error,
   input,
@@ -27,6 +29,8 @@ export function ChatInput({
   onSend,
   onStop,
 }: ChatInputProps) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
@@ -36,11 +40,22 @@ export function ChatInput({
     textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
   }, [input]);
 
+  async function handleSend() {
+    await onSend(files);
+    setFiles([]);
+  }
+
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      onSend();
+      handleSend();
     }
+  }
+
+  function removeFile(index: number) {
+    setFiles((currentFiles) =>
+      currentFiles.filter((_file, fileIndex) => fileIndex !== index)
+    );
   }
 
   return (
@@ -51,7 +66,51 @@ export function ChatInput({
         </div>
       )}
 
+      {files.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {files.map((file, index) => (
+            <div
+              key={`${file.name}-${file.size}-${index}`}
+              className="flex max-w-full items-center gap-2 rounded-xl border border-gray-800 bg-gray-900 px-3 py-2 text-xs text-gray-300"
+            >
+              <span className="max-w-48 truncate">{file.name}</span>
+              <button
+                onClick={() => removeFile(index)}
+                className="text-gray-500 hover:text-white"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="flex items-end gap-3">
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/png,image/jpeg,image/webp,application/pdf,text/plain,text/markdown"
+          className="hidden"
+          onChange={(event) => {
+            setFiles(Array.from(event.target.files ?? []));
+            event.target.value = "";
+          }}
+        />
+
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={!attachmentsEnabled || loading}
+          className="rounded-2xl border border-gray-800 px-4 py-4 text-sm text-gray-300 transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
+          title={
+            attachmentsEnabled
+              ? "Attach files"
+              : "Sign in to upload attachments"
+          }
+        >
+          Attach
+        </button>
+
         <textarea
           ref={textareaRef}
           rows={1}
@@ -71,7 +130,7 @@ export function ChatInput({
           </button>
         ) : (
           <button
-            onClick={onSend}
+            onClick={handleSend}
             className="rounded-2xl bg-blue-600 px-6 py-4 transition hover:bg-blue-700"
           >
             Send
