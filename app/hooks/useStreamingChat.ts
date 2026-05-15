@@ -15,6 +15,60 @@ type SendMessageOptions = {
   updateChatMessages: (id: string, messages: Message[], title?: string) => void;
 };
 
+const TEXT_ATTACHMENT_MIME_TYPES = new Set(["text/plain", "text/markdown"]);
+const MAX_TEXT_ATTACHMENT_CHARS = 60_000;
+
+function isTextAttachment(file: File) {
+  const lowerName = file.name.toLowerCase();
+
+  return (
+    TEXT_ATTACHMENT_MIME_TYPES.has(file.type) ||
+    lowerName.endsWith(".txt") ||
+    lowerName.endsWith(".md") ||
+    lowerName.endsWith(".markdown")
+  );
+}
+
+function getCodeFenceLanguage(file: File) {
+  const lowerName = file.name.toLowerCase();
+
+  if (file.type === "text/markdown" || lowerName.endsWith(".md")) {
+    return "md";
+  }
+
+  return "txt";
+}
+
+async function buildTextAttachmentContext(files: File[]) {
+  const textFiles = files.filter(isTextAttachment);
+
+  if (textFiles.length === 0) return "";
+
+  const sections = await Promise.all(
+    textFiles.map(async (file) => {
+      const content = await file.text();
+      const truncatedContent =
+        content.length > MAX_TEXT_ATTACHMENT_CHARS
+          ? `${content.slice(
+              0,
+              MAX_TEXT_ATTACHMENT_CHARS
+            )}\n\n[File truncated after ${MAX_TEXT_ATTACHMENT_CHARS} characters.]`
+          : content;
+
+      return [
+        `Attached file: ${file.name}`,
+        `Type: ${file.type || "text/plain"}`,
+        "",
+        `\`\`\`${getCodeFenceLanguage(file)}`,
+        truncatedContent,
+        "```",
+      ].join("\n");
+    })
+  );
+
+  return sections.join("\n\n");
+}
+
 async function uploadAttachment({
   activeChatId,
   content,
@@ -98,6 +152,17 @@ export function useStreamingChat() {
         attachments: uploadedAttachments,
       };
       const updatedMessages = [...activeChat.messages, userMessage];
+      const textAttachmentContext = await buildTextAttachmentContext(attachments);
+      const modelMessages = textAttachmentContext
+        ? [
+            ...activeChat.messages,
+            {
+              ...userMessage,
+              attachments: undefined,
+              content: `${messageContent}\n\n${textAttachmentContext}`,
+            },
+          ]
+        : updatedMessages;
       const nextTitle =
         activeChat.messages.length === 0
           ? messageContent.slice(0, 30).trim() || "New Chat"
@@ -115,7 +180,7 @@ export function useStreamingChat() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          messages: updatedMessages,
+          messages: modelMessages,
           model: settings.model,
           systemPrompt: settings.systemPrompt,
           temperature: settings.temperature,
