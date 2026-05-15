@@ -1,20 +1,25 @@
 # Nexus Next
 
-Nexus Next is a modern multi-model AI chat workspace built with Next.js 16, React 19, Clerk, OpenRouter, and Supabase-ready architecture.
+Nexus Next is a modern multi-model AI chat workspace built with Next.js 16, React 19, Clerk, OpenRouter, and Supabase.
 
-The project currently focuses on a clean chat foundation: streaming responses, model switching, authentication UI, markdown rendering, local chat persistence, and a componentized App Router structure that can grow into database sync, search, uploads, RAG, and agents.
+Live beta: [https://nexusnext.vercel.app](https://nexusnext.vercel.app)
+
+The project currently focuses on a clean chat foundation: streaming responses, model switching, authentication UI, markdown rendering, Supabase persistence, search, settings, exports, and a componentized App Router structure that can grow into uploads, RAG, and agents.
 
 ## Features
 
 - Multi-model chat through OpenRouter
 - Streaming assistant responses
-- Local chat history persistence
+- Supabase chat and message persistence for signed-in users
+- Local chat history persistence for signed-out users
 - Chat create, rename, delete, regenerate, and stop-generation controls
+- Chat search across loaded titles and messages
+- Settings panel for model, temperature, and system prompt
+- Chat export to Markdown and JSON
 - Markdown rendering with GitHub Flavored Markdown support
 - Clerk authentication UI
 - Next.js 16 `proxy.ts` convention
 - Componentized chat UI and extracted hooks
-- Supabase client foundation for future database persistence
 
 ## Tech Stack
 
@@ -49,6 +54,7 @@ CLERK_SECRET_KEY=
 OPENROUTER_API_KEY=
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
 ```
 
 Start the development server:
@@ -73,13 +79,17 @@ pnpm lint
 ```txt
 app/
   api/chat/route.ts
+  api/chats/
   components/chat/
   components/layout/
+  components/settings/
   hooks/
   types/
 lib/
   ai/
   markdown/
+  supabase/
+  utils/
   supabase.ts
 proxy.ts
 ```
@@ -88,9 +98,12 @@ Important modules:
 
 - `app/hooks/useChats.ts` manages local chat state and persistence.
 - `app/hooks/useStreamingChat.ts` manages send, stream, abort, and error state.
+- `app/hooks/useChatSettings.ts` manages persisted model behavior settings.
 - `lib/ai/models.ts` defines the available model registry.
 - `lib/ai/openrouter.ts` owns OpenRouter API integration.
 - `lib/markdown/renderer.tsx` owns markdown rendering.
+- `lib/utils/export-chat.ts` owns Markdown and JSON chat export.
+- `lib/supabase/server.ts` owns the server-only Supabase admin client.
 
 ## Environment Safety
 
@@ -98,12 +111,11 @@ Do not commit `.env.local` or any real secret values. The repository includes `.
 
 ## Roadmap
 
-- Supabase database persistence for chats and messages
-- User chat sync after sign-in
-- Message search
-- Settings panel for model behavior, system prompt, and theme
 - File and image attachments
-- Chat export to Markdown, JSON, and PDF
+- PDF export
+- Theme controls
+- Supabase-backed full-text search
 - RAG and agent workflows
 - Public landing page
-- Vercel deployment
+
+See [docs/roadmap.md](docs/roadmap.md) for the fuller plan.
