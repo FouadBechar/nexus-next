@@ -16,6 +16,10 @@ import { useChatSettings } from "./hooks/useChatSettings";
 import { useChats } from "./hooks/useChats";
 import { useStreamingChat } from "./hooks/useStreamingChat";
 import { MODELS } from "../lib/ai/models";
+import {
+  exportChatAsJson,
+  exportChatAsMarkdown,
+} from "../lib/utils/export-chat";
 
 export default function Home() {
   const { isLoaded, isSignedIn, user } = useUser();
@@ -95,6 +99,18 @@ export default function Home() {
     handleSendMessage(lastUserMessage.content);
   }
 
+  function exportMarkdown() {
+    if (!activeChat || activeChat.messages.length === 0) return;
+
+    exportChatAsMarkdown(activeChat);
+  }
+
+  function exportJson() {
+    if (!activeChat || activeChat.messages.length === 0) return;
+
+    exportChatAsJson(activeChat);
+  }
+
   return (
     <main className="flex h-screen overflow-hidden bg-black text-white">
       <ChatSidebar
@@ -140,10 +156,13 @@ export default function Home() {
         </div>
 
         <ChatInput
+          canExport={Boolean(activeChat?.messages.length)}
           error={error}
           input={input}
           loading={loading}
           onChange={setInput}
+          onExportJson={exportJson}
+          onExportMarkdown={exportMarkdown}
           onRegenerate={regenerateLast}
           onSend={() => handleSendMessage()}
           onStop={stopGeneration}

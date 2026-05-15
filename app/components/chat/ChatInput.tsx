@@ -3,20 +3,26 @@
 import { KeyboardEvent, useEffect, useRef } from "react";
 
 type ChatInputProps = {
+  canExport?: boolean;
   error?: string;
   input: string;
   loading: boolean;
   onChange: (value: string) => void;
+  onExportJson: () => void;
+  onExportMarkdown: () => void;
   onRegenerate: () => void;
   onSend: () => void;
   onStop: () => void;
 };
 
 export function ChatInput({
+  canExport = false,
   error,
   input,
   loading,
   onChange,
+  onExportJson,
+  onExportMarkdown,
   onRegenerate,
   onSend,
   onStop,
@@ -73,12 +79,30 @@ export function ChatInput({
         )}
       </div>
 
-      <div className="mt-3 flex justify-between text-xs text-gray-500">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-500">
         <button onClick={onRegenerate} className="hover:text-white">
           Regenerate Response
         </button>
 
-        <span>Nexus Next v1</span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onExportMarkdown}
+            disabled={!canExport}
+            className="hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Export MD
+          </button>
+
+          <button
+            onClick={onExportJson}
+            disabled={!canExport}
+            className="hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Export JSON
+          </button>
+
+          <span>Nexus Next v1</span>
+        </div>
       </div>
     </div>
   );
