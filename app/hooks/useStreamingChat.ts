@@ -69,6 +69,23 @@ async function buildTextAttachmentContext(files: File[]) {
   return sections.join("\n\n");
 }
 
+function buildExtractedAttachmentContext(attachments: MessageAttachment[]) {
+  const sections = attachments
+    .filter((attachment) => attachment.extractedText?.trim())
+    .map((attachment) =>
+      [
+        `Attached file: ${attachment.fileName}`,
+        `Type: ${attachment.mimeType}`,
+        "",
+        "```txt",
+        attachment.extractedText,
+        "```",
+      ].join("\n")
+    );
+
+  return sections.join("\n\n");
+}
+
 async function uploadAttachment({
   activeChatId,
   content,
@@ -153,13 +170,21 @@ export function useStreamingChat() {
       };
       const updatedMessages = [...activeChat.messages, userMessage];
       const textAttachmentContext = await buildTextAttachmentContext(attachments);
-      const modelMessages = textAttachmentContext
+      const extractedAttachmentContext =
+        buildExtractedAttachmentContext(uploadedAttachments);
+      const attachmentContext = [
+        textAttachmentContext,
+        extractedAttachmentContext,
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+      const modelMessages = attachmentContext
         ? [
             ...activeChat.messages,
             {
               ...userMessage,
               attachments: undefined,
-              content: `${messageContent}\n\n${textAttachmentContext}`,
+              content: `${messageContent}\n\n${attachmentContext}`,
             },
           ]
         : updatedMessages;

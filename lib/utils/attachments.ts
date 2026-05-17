@@ -1,4 +1,5 @@
 type AttachmentLike = {
+  extractedText?: string;
   fileName?: string;
   mimeType: string;
   fileSize: number;
@@ -47,7 +48,9 @@ export function getAttachmentDisplayInfo(attachment: AttachmentLike) {
   const fileName = attachment.fileName ?? attachment.name ?? "Attachment";
   const mimeType = attachment.mimeType || attachment.type || "";
   const fileSize = attachment.fileSize || attachment.size || 0;
-  const aiReadable = isAiReadableAttachment(mimeType, fileName);
+  const aiReadable =
+    Boolean(attachment.extractedText?.trim()) ||
+    isAiReadableAttachment(mimeType, fileName);
 
   return {
     aiReadable,

@@ -1,6 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest } from "next/server";
+import { extractPdfText } from "../../../lib/pdf/extract";
 import { getSupabaseAdmin } from "../../../lib/supabase/server";
+
+export const runtime = "nodejs";
 
 const ATTACHMENTS_BUCKET = "chat-attachments";
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -95,6 +98,19 @@ export async function POST(req: NextRequest) {
 
     if (messageError) throw messageError;
 
+    let extractedText = "";
+    let extractionTruncated = false;
+
+    if (file.type === "application/pdf") {
+      try {
+        const extraction = await extractPdfText(file);
+        extractedText = extraction.extractedText;
+        extractionTruncated = extraction.truncated;
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
     const attachmentId = crypto.randomUUID();
     const storagePath = `${userId}/${chatId}/${attachmentId}-${safeFileName(
       file.name
@@ -135,6 +151,8 @@ export async function POST(req: NextRequest) {
         fileName: file.name,
         mimeType: file.type,
         fileSize: file.size,
+        extractedText,
+        extractionTruncated,
         url: data?.signedUrl ?? "",
       },
     });

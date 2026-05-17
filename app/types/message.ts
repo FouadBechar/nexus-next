@@ -4,6 +4,7 @@ export type MessageAttachment = {
   mimeType: string;
   fileSize: number;
   url: string;
+  extractedText?: string;
 };
 
 export type Message = {
