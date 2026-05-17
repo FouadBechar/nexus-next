@@ -2,6 +2,7 @@
 
 import type { Message } from "../../types/message";
 import { MarkdownRenderer } from "../../../lib/markdown/renderer";
+import { getAttachmentDisplayInfo } from "../../../lib/utils/attachments";
 
 type ChatMessageProps = {
   message: Message;
@@ -27,31 +28,7 @@ export function ChatMessage({ message, onCopy }: ChatMessageProps) {
         {message.attachments && message.attachments.length > 0 && (
           <div className="mt-4 grid gap-3">
             {message.attachments.map((attachment) => (
-              <a
-                key={attachment.id}
-                href={attachment.url}
-                target="_blank"
-                rel="noreferrer"
-                className="block overflow-hidden rounded-2xl border border-gray-700 bg-black/30"
-              >
-                {attachment.mimeType.startsWith("image/") && attachment.url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={attachment.url}
-                    alt={attachment.fileName}
-                    className="max-h-80 w-full object-contain"
-                  />
-                ) : (
-                  <div className="p-4 text-sm text-gray-300">
-                    <div className="truncate font-medium">
-                      {attachment.fileName}
-                    </div>
-                    <div className="mt-1 text-xs text-gray-500">
-                      {attachment.mimeType}
-                    </div>
-                  </div>
-                )}
-              </a>
+              <AttachmentCard key={attachment.id} attachment={attachment} />
             ))}
           </div>
         )}
@@ -70,5 +47,55 @@ export function ChatMessage({ message, onCopy }: ChatMessageProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+function AttachmentCard({
+  attachment,
+}: {
+  attachment: NonNullable<Message["attachments"]>[number];
+}) {
+  const displayInfo = getAttachmentDisplayInfo({
+    fileName: attachment.fileName,
+    fileSize: attachment.fileSize,
+    mimeType: attachment.mimeType,
+  });
+
+  return (
+    <a
+      href={attachment.url}
+      target="_blank"
+      rel="noreferrer"
+      className="block overflow-hidden rounded-2xl border border-gray-700 bg-black/30"
+    >
+      {attachment.mimeType.startsWith("image/") && attachment.url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={attachment.url}
+          alt={attachment.fileName}
+          className="max-h-80 w-full object-contain"
+        />
+      ) : (
+        <div className="p-4 text-sm text-gray-300">
+          <div className="truncate font-medium">{attachment.fileName}</div>
+        </div>
+      )}
+
+      <div className="border-t border-gray-800 px-4 py-3 text-xs text-gray-400">
+        <div className="flex flex-wrap items-center gap-2">
+          <span>{displayInfo.typeLabel}</span>
+          <span>{displayInfo.fileSizeLabel}</span>
+          <span
+            className={`rounded-full px-2 py-0.5 ${
+              displayInfo.aiReadable
+                ? "bg-emerald-500/10 text-emerald-300"
+                : "bg-gray-800 text-gray-400"
+            }`}
+          >
+            {displayInfo.statusLabel}
+          </span>
+        </div>
+      </div>
+    </a>
   );
 }

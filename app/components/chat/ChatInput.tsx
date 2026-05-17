@@ -1,6 +1,7 @@
 "use client";
 
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
+import { getAttachmentDisplayInfo } from "../../../lib/utils/attachments";
 
 type ChatInputProps = {
   attachmentsEnabled?: boolean;
@@ -67,20 +68,13 @@ export function ChatInput({
       )}
 
       {files.length > 0 && (
-        <div className="mb-3 flex flex-wrap gap-2">
+        <div className="mb-3 grid gap-2">
           {files.map((file, index) => (
-            <div
+            <SelectedFilePreview
               key={`${file.name}-${file.size}-${index}`}
-              className="flex max-w-full items-center gap-2 rounded-xl border border-gray-800 bg-gray-900 px-3 py-2 text-xs text-gray-300"
-            >
-              <span className="max-w-48 truncate">{file.name}</span>
-              <button
-                onClick={() => removeFile(index)}
-                className="text-gray-500 hover:text-white"
-              >
-                Remove
-              </button>
-            </div>
+              file={file}
+              onRemove={() => removeFile(index)}
+            />
           ))}
         </div>
       )}
@@ -163,6 +157,45 @@ export function ChatInput({
           <span>Nexus Next v1</span>
         </div>
       </div>
+    </div>
+  );
+}
+
+function SelectedFilePreview({
+  file,
+  onRemove,
+}: {
+  file: File;
+  onRemove: () => void;
+}) {
+  const displayInfo = getAttachmentDisplayInfo({
+    fileName: file.name,
+    fileSize: file.size,
+    mimeType: file.type,
+  });
+
+  return (
+    <div className="flex max-w-full items-center justify-between gap-3 rounded-xl border border-gray-800 bg-gray-900 px-3 py-2 text-xs text-gray-300">
+      <div className="min-w-0">
+        <div className="truncate font-medium">{displayInfo.fileName}</div>
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-gray-500">
+          <span>{displayInfo.typeLabel}</span>
+          <span>{displayInfo.fileSizeLabel}</span>
+          <span
+            className={`rounded-full px-2 py-0.5 ${
+              displayInfo.aiReadable
+                ? "bg-emerald-500/10 text-emerald-300"
+                : "bg-gray-800 text-gray-400"
+            }`}
+          >
+            {displayInfo.statusLabel}
+          </span>
+        </div>
+      </div>
+
+      <button onClick={onRemove} className="shrink-0 text-gray-500 hover:text-white">
+        Remove
+      </button>
     </div>
   );
 }
