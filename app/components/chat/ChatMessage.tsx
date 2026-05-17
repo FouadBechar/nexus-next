@@ -56,6 +56,8 @@ function AttachmentCard({
   attachment: NonNullable<Message["attachments"]>[number];
 }) {
   const displayInfo = getAttachmentDisplayInfo({
+    extractionStatus: attachment.extractionStatus,
+    extractionTruncated: attachment.extractionTruncated,
     extractedText: attachment.extractedText,
     fileName: attachment.fileName,
     fileSize: attachment.fileSize,

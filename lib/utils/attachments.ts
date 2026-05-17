@@ -1,4 +1,6 @@
 type AttachmentLike = {
+  extractionStatus?: "readable" | "empty" | "failed";
+  extractionTruncated?: boolean;
   extractedText?: string;
   fileName?: string;
   mimeType: string;
@@ -49,14 +51,25 @@ export function getAttachmentDisplayInfo(attachment: AttachmentLike) {
   const mimeType = attachment.mimeType || attachment.type || "";
   const fileSize = attachment.fileSize || attachment.size || 0;
   const aiReadable =
+    attachment.extractionStatus === "readable" ||
     Boolean(attachment.extractedText?.trim()) ||
     isAiReadableAttachment(mimeType, fileName);
+  const statusLabel =
+    attachment.extractionStatus === "empty"
+      ? "No extractable text"
+      : attachment.extractionStatus === "failed"
+        ? "Extraction failed"
+        : aiReadable
+          ? attachment.extractionTruncated
+            ? "AI-readable · truncated"
+            : "AI-readable"
+          : "Stored only";
 
   return {
     aiReadable,
     fileName,
     fileSizeLabel: formatFileSize(fileSize),
     typeLabel: getAttachmentTypeLabel(mimeType, fileName),
-    statusLabel: aiReadable ? "AI-readable" : "Stored only",
+    statusLabel,
   };
 }

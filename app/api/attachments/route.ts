@@ -100,14 +100,17 @@ export async function POST(req: NextRequest) {
 
     let extractedText = "";
     let extractionTruncated = false;
+    let extractionStatus: "readable" | "empty" | "failed" | undefined;
 
     if (file.type === "application/pdf") {
       try {
         const extraction = await extractPdfText(file);
         extractedText = extraction.extractedText;
         extractionTruncated = extraction.truncated;
+        extractionStatus = extractedText.trim() ? "readable" : "empty";
       } catch (error) {
         console.error(error);
+        extractionStatus = "failed";
       }
     }
 
@@ -152,6 +155,7 @@ export async function POST(req: NextRequest) {
         mimeType: file.type,
         fileSize: file.size,
         extractedText,
+        extractionStatus,
         extractionTruncated,
         url: data?.signedUrl ?? "",
       },
