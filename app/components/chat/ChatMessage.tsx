@@ -6,10 +6,15 @@ import { getAttachmentDisplayInfo } from "../../../lib/utils/attachments";
 
 type ChatMessageProps = {
   message: Message;
+  modelSupportsImages?: boolean;
   onCopy: (text: string) => void;
 };
 
-export function ChatMessage({ message, onCopy }: ChatMessageProps) {
+export function ChatMessage({
+  message,
+  modelSupportsImages = false,
+  onCopy,
+}: ChatMessageProps) {
   return (
     <div
       className={`min-w-0 flex ${
@@ -28,7 +33,11 @@ export function ChatMessage({ message, onCopy }: ChatMessageProps) {
         {message.attachments && message.attachments.length > 0 && (
           <div className="mt-4 grid gap-3">
             {message.attachments.map((attachment) => (
-              <AttachmentCard key={attachment.id} attachment={attachment} />
+              <AttachmentCard
+                key={attachment.id}
+                attachment={attachment}
+                modelSupportsImages={modelSupportsImages}
+              />
             ))}
           </div>
         )}
@@ -52,8 +61,10 @@ export function ChatMessage({ message, onCopy }: ChatMessageProps) {
 
 function AttachmentCard({
   attachment,
+  modelSupportsImages,
 }: {
   attachment: NonNullable<Message["attachments"]>[number];
+  modelSupportsImages: boolean;
 }) {
   const displayInfo = getAttachmentDisplayInfo({
     extractionStatus: attachment.extractionStatus,
@@ -62,6 +73,7 @@ function AttachmentCard({
     fileName: attachment.fileName,
     fileSize: attachment.fileSize,
     mimeType: attachment.mimeType,
+    modelSupportsImages,
   });
 
   return (

@@ -5,4 +5,5 @@ export type Model = {
   name: string;
   provider: string;
   speed: ModelSpeed;
+  supportsImages: boolean;
 };

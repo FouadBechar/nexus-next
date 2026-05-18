@@ -1,8 +1,29 @@
+import { modelSupportsImages } from "./models";
+
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+type AttachmentPayload = {
+  fileName?: string;
+  mimeType: string;
+  url: string;
+};
+
+type OpenRouterContentPart =
+  | {
+      type: "text";
+      text: string;
+    }
+  | {
+      type: "image_url";
+      image_url: {
+        url: string;
+      };
+    };
 
 type OpenRouterMessage = {
   role: "user" | "assistant" | "system";
-  content: string;
+  content: string | OpenRouterContentPart[];
+  attachments?: AttachmentPayload[];
 };
 
 type StreamOpenRouterChatOptions = {
@@ -22,6 +43,51 @@ function getOpenRouterApiKey() {
   return apiKey;
 }
 
+function isImageAttachment(attachment: AttachmentPayload) {
+  return attachment.mimeType.startsWith("image/") && Boolean(attachment.url);
+}
+
+function toOpenRouterMessage(
+  message: OpenRouterMessage,
+  supportsImages: boolean
+): OpenRouterMessage {
+  if (
+    !supportsImages ||
+    message.role !== "user" ||
+    typeof message.content !== "string"
+  ) {
+    return {
+      role: message.role,
+      content: message.content,
+    };
+  }
+
+  const imageAttachments = message.attachments?.filter(isImageAttachment) ?? [];
+
+  if (imageAttachments.length === 0) {
+    return {
+      role: message.role,
+      content: message.content,
+    };
+  }
+
+  return {
+    role: message.role,
+    content: [
+      {
+        type: "text",
+        text: message.content,
+      },
+      ...imageAttachments.map((attachment) => ({
+        type: "image_url" as const,
+        image_url: {
+          url: attachment.url,
+        },
+      })),
+    ],
+  };
+}
+
 export async function streamOpenRouterChat({
   messages,
   model,
@@ -29,15 +95,19 @@ export async function streamOpenRouterChat({
   temperature,
 }: StreamOpenRouterChatOptions) {
   const trimmedSystemPrompt = systemPrompt?.trim();
+  const supportsImages = modelSupportsImages(model);
+  const requestChatMessages = messages.map((message) =>
+    toOpenRouterMessage(message, supportsImages)
+  );
   const requestMessages = trimmedSystemPrompt
     ? [
         {
           role: "system" as const,
           content: trimmedSystemPrompt,
         },
-        ...messages,
+        ...requestChatMessages,
       ]
-    : messages;
+    : requestChatMessages;
   const safeTemperature =
     typeof temperature === "number"
       ? Math.min(2, Math.max(0, temperature))

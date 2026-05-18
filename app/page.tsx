@@ -15,7 +15,7 @@ import { useAutoScroll } from "./hooks/useAutoScroll";
 import { useChatSettings } from "./hooks/useChatSettings";
 import { useChats } from "./hooks/useChats";
 import { useStreamingChat } from "./hooks/useStreamingChat";
-import { MODELS } from "../lib/ai/models";
+import { MODELS, modelSupportsImages } from "../lib/ai/models";
 import {
   exportChatAsJson,
   exportChatAsMarkdown,
@@ -41,6 +41,7 @@ export default function Home() {
     updateChatMessages,
   } = useChats(isSignedIn ? user?.id ?? null : null, isLoaded);
   const { resetSettings, settings, updateSettings } = useChatSettings();
+  const selectedModelSupportsImages = modelSupportsImages(settings.model);
 
   const {
     currentResponse,
@@ -145,6 +146,7 @@ export default function Home() {
             <ChatMessage
               key={`${message.createdAt ?? index}-${message.role}`}
               message={message}
+              modelSupportsImages={selectedModelSupportsImages}
               onCopy={copyText}
             />
           ))}
@@ -162,6 +164,7 @@ export default function Home() {
           error={error}
           input={input}
           loading={loading}
+          modelSupportsImages={selectedModelSupportsImages}
           onChange={setInput}
           onExportJson={exportJson}
           onExportMarkdown={exportMarkdown}

@@ -5,6 +5,7 @@ type AttachmentLike = {
   fileName?: string;
   mimeType: string;
   fileSize: number;
+  modelSupportsImages?: boolean;
   name?: string;
   size?: number;
   type?: string;
@@ -46,11 +47,18 @@ export function isAiReadableAttachment(mimeType: string, fileName = "") {
   );
 }
 
+export function isImageAttachment(mimeType: string) {
+  return mimeType.startsWith("image/");
+}
+
 export function getAttachmentDisplayInfo(attachment: AttachmentLike) {
   const fileName = attachment.fileName ?? attachment.name ?? "Attachment";
   const mimeType = attachment.mimeType || attachment.type || "";
   const fileSize = attachment.fileSize || attachment.size || 0;
+  const imageReadable =
+    isImageAttachment(mimeType) && Boolean(attachment.modelSupportsImages);
   const aiReadable =
+    imageReadable ||
     attachment.extractionStatus === "readable" ||
     Boolean(attachment.extractedText?.trim()) ||
     isAiReadableAttachment(mimeType, fileName);

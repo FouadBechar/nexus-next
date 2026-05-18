@@ -9,6 +9,7 @@ type ChatInputProps = {
   error?: string;
   input: string;
   loading: boolean;
+  modelSupportsImages?: boolean;
   onChange: (value: string) => void;
   onExportJson: () => void;
   onExportMarkdown: () => void;
@@ -23,6 +24,7 @@ export function ChatInput({
   error,
   input,
   loading,
+  modelSupportsImages = false,
   onChange,
   onExportJson,
   onExportMarkdown,
@@ -73,6 +75,7 @@ export function ChatInput({
             <SelectedFilePreview
               key={`${file.name}-${file.size}-${index}`}
               file={file}
+              modelSupportsImages={modelSupportsImages}
               onRemove={() => removeFile(index)}
             />
           ))}
@@ -163,15 +166,18 @@ export function ChatInput({
 
 function SelectedFilePreview({
   file,
+  modelSupportsImages,
   onRemove,
 }: {
   file: File;
+  modelSupportsImages: boolean;
   onRemove: () => void;
 }) {
   const displayInfo = getAttachmentDisplayInfo({
     fileName: file.name,
     fileSize: file.size,
     mimeType: file.type,
+    modelSupportsImages,
   });
 
   return (

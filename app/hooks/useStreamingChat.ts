@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import type { Chat } from "../types/chat";
 import type { Message, MessageAttachment } from "../types/message";
 import type { ChatSettings } from "../types/settings";
+import { modelSupportsImages } from "../../lib/ai/models";
 
 type SendMessageOptions = {
   activeChat: Chat | undefined;
@@ -84,6 +85,27 @@ function buildExtractedAttachmentContext(attachments: MessageAttachment[]) {
     );
 
   return sections.join("\n\n");
+}
+
+function isImageAttachment(attachment: MessageAttachment) {
+  return attachment.mimeType.startsWith("image/") && Boolean(attachment.url);
+}
+
+function withModelReadableAttachments(
+  message: Message,
+  supportsImages: boolean
+): Message {
+  const readableAttachments = supportsImages
+    ? message.attachments?.filter(isImageAttachment)
+    : undefined;
+
+  return {
+    ...message,
+    attachments:
+      readableAttachments && readableAttachments.length > 0
+        ? readableAttachments
+        : undefined,
+  };
 }
 
 async function uploadAttachment({
@@ -178,16 +200,17 @@ export function useStreamingChat() {
       ]
         .filter(Boolean)
         .join("\n\n");
-      const modelMessages = attachmentContext
-        ? [
-            ...activeChat.messages,
-            {
-              ...userMessage,
-              attachments: undefined,
-              content: `${messageContent}\n\n${attachmentContext}`,
-            },
-          ]
-        : updatedMessages;
+      const selectedModelSupportsImages = modelSupportsImages(settings.model);
+      const modelUserMessage = {
+        ...userMessage,
+        content: attachmentContext
+          ? `${messageContent}\n\n${attachmentContext}`
+          : messageContent,
+      };
+      const modelMessages = [...activeChat.messages, modelUserMessage].map(
+        (message) =>
+          withModelReadableAttachments(message, selectedModelSupportsImages)
+      );
       const nextTitle =
         activeChat.messages.length === 0
           ? messageContent.slice(0, 30).trim() || "New Chat"
