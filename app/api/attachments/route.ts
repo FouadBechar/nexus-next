@@ -7,6 +7,8 @@ export const runtime = "nodejs";
 
 const ATTACHMENTS_BUCKET = "chat-attachments";
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_EXTRACTED_TEXT_CHARS = 60_000;
+const TEXT_MIME_TYPES = new Set(["text/plain", "text/markdown"]);
 const ALLOWED_MIME_TYPES = new Set([
   "image/png",
   "image/jpeg",
@@ -24,6 +26,36 @@ function safeFileName(value: string) {
       .replace(/[^a-z0-9.]+/g, "-")
       .replace(/^-+|-+$/g, "") || "attachment"
   );
+}
+
+function isTextFile(file: File) {
+  const lowerName = file.name.toLowerCase();
+
+  return (
+    TEXT_MIME_TYPES.has(file.type) ||
+    lowerName.endsWith(".txt") ||
+    lowerName.endsWith(".md") ||
+    lowerName.endsWith(".markdown")
+  );
+}
+
+async function extractTextFile(file: File) {
+  const text = (await file.text()).trim();
+
+  if (!text) {
+    return {
+      extractedText: "",
+      truncated: false,
+    };
+  }
+
+  return {
+    extractedText:
+      text.length > MAX_EXTRACTED_TEXT_CHARS
+        ? text.slice(0, MAX_EXTRACTED_TEXT_CHARS)
+        : text,
+    truncated: text.length > MAX_EXTRACTED_TEXT_CHARS,
+  };
 }
 
 async function getCurrentUserId() {
@@ -107,7 +139,12 @@ export async function POST(req: NextRequest) {
       | undefined;
     let extractionDetail: string | undefined;
 
-    if (file.type === "application/pdf") {
+    if (isTextFile(file)) {
+      const extraction = await extractTextFile(file);
+      extractedText = extraction.extractedText;
+      extractionTruncated = extraction.truncated;
+      extractionStatus = extractedText.trim() ? "readable" : "empty";
+    } else if (file.type === "application/pdf") {
       try {
         const extraction = await extractPdfText(file);
         extractedText = extraction.extractedText;

@@ -18,65 +18,11 @@ type SendMessageOptions = {
   updateChatMessages: (id: string, messages: Message[], title?: string) => void;
 };
 
-const TEXT_ATTACHMENT_MIME_TYPES = new Set(["text/plain", "text/markdown"]);
-const MAX_TEXT_ATTACHMENT_CHARS = 60_000;
-
 class ChatRequestError extends Error {
   constructor(message: string, public status: number) {
     super(message);
     this.name = "ChatRequestError";
   }
-}
-
-function isTextAttachment(file: File) {
-  const lowerName = file.name.toLowerCase();
-
-  return (
-    TEXT_ATTACHMENT_MIME_TYPES.has(file.type) ||
-    lowerName.endsWith(".txt") ||
-    lowerName.endsWith(".md") ||
-    lowerName.endsWith(".markdown")
-  );
-}
-
-function getCodeFenceLanguage(file: File) {
-  const lowerName = file.name.toLowerCase();
-
-  if (file.type === "text/markdown" || lowerName.endsWith(".md")) {
-    return "md";
-  }
-
-  return "txt";
-}
-
-async function buildTextAttachmentContext(files: File[]) {
-  const textFiles = files.filter(isTextAttachment);
-
-  if (textFiles.length === 0) return "";
-
-  const sections = await Promise.all(
-    textFiles.map(async (file) => {
-      const content = await file.text();
-      const truncatedContent =
-        content.length > MAX_TEXT_ATTACHMENT_CHARS
-          ? `${content.slice(
-              0,
-              MAX_TEXT_ATTACHMENT_CHARS
-            )}\n\n[File truncated after ${MAX_TEXT_ATTACHMENT_CHARS} characters.]`
-          : content;
-
-      return [
-        `Attached file: ${file.name}`,
-        `Type: ${file.type || "text/plain"}`,
-        "",
-        `\`\`\`${getCodeFenceLanguage(file)}`,
-        truncatedContent,
-        "```",
-      ].join("\n");
-    })
-  );
-
-  return sections.join("\n\n");
 }
 
 function buildExtractedAttachmentContext(attachments: MessageAttachment[]) {
@@ -94,6 +40,32 @@ function buildExtractedAttachmentContext(attachments: MessageAttachment[]) {
     );
 
   return sections.join("\n\n");
+}
+
+function withAttachmentContext(
+  message: Message,
+  supportsImages: boolean
+): Message {
+  if (message.role !== "user" || !message.attachments?.length) {
+    return message;
+  }
+
+  const attachmentContext = [
+    buildExtractedAttachmentContext(message.attachments),
+    buildUnsupportedAttachmentContext(message.attachments, supportsImages),
+    buildFailedPdfAttachmentContext(message.attachments),
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
+  if (!attachmentContext) {
+    return message;
+  }
+
+  return {
+    ...message,
+    content: `${message.content}\n\n${attachmentContext}`,
+  };
 }
 
 function buildUnsupportedAttachmentContext(
@@ -377,33 +349,16 @@ export function useStreamingChat() {
             attachments: uploadedAttachments,
           };
       const updatedMessages = [...conversationBase, userMessage];
-      const textAttachmentContext = await buildTextAttachmentContext(attachments);
-      const extractedAttachmentContext =
-        buildExtractedAttachmentContext(uploadedAttachments);
       const selectedModelSupportsImages = modelSupportsImages(settings.model);
       const unsupportedAttachmentContext = buildUnsupportedAttachmentContext(
         uploadedAttachments,
         selectedModelSupportsImages
       );
-      const failedPdfAttachmentContext =
-        buildFailedPdfAttachmentContext(uploadedAttachments);
-      const attachmentContext = [
-        textAttachmentContext,
-        extractedAttachmentContext,
-        unsupportedAttachmentContext,
-        failedPdfAttachmentContext,
-      ]
-        .filter(Boolean)
-        .join("\n\n");
-      const modelUserMessage = {
-        ...userMessage,
-        content: attachmentContext
-          ? `${messageContent}\n\n${attachmentContext}`
-          : messageContent,
-      };
-      const modelMessages = [...conversationBase, modelUserMessage].map(
-        (message) =>
-          withModelReadableAttachments(message, selectedModelSupportsImages)
+      const modelMessages = [...conversationBase, userMessage].map((message) =>
+        withModelReadableAttachments(
+          withAttachmentContext(message, selectedModelSupportsImages),
+          selectedModelSupportsImages
+        )
       );
       const nextTitle =
         conversationBase.length === 0

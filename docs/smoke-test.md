@@ -17,8 +17,10 @@ Run this checklist before promoting a deployment.
 ## Attachments
 
 - Upload an image with an image-capable model and confirm the assistant can inspect it.
+- Upload a text or Markdown file and confirm the assistant can summarize it.
+- Reload the chat, ask a follow-up about the same text or Markdown file, and confirm the assistant still has the file context.
 - Upload a PDF and confirm the attachment badge shows whether text was readable, empty, failed, or truncated.
-- Reload the chat and confirm attachment metadata and PDF extraction status still appear.
+- Reload the chat and confirm attachment metadata, signed links, and extraction status still appear.
 
 ## Exports
 

@@ -12,14 +12,16 @@ Nexus Next is currently in beta with the core chat loop working in production.
 - Search across loaded chat titles and messages
 - Settings for model, temperature, and system prompt
 - Markdown and JSON chat export
+- Image, PDF, text, and Markdown attachments
+- Persisted extraction metadata for readable text-based uploads
 - Mobile-friendly chat layout
 - Vercel deployment
 
 ## Next
 
-- File and image attachments
 - PDF export
 - Theme controls
+- OCR or better fallback handling for scanned PDFs
 - Supabase-backed full-text search for larger histories
 - Better model metadata, badges, and capability indicators
 

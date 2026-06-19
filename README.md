@@ -4,7 +4,7 @@ Nexus Next is a modern multi-model AI chat workspace built with Next.js 16, Reac
 
 Live beta: [https://nexusnext.vercel.app](https://nexusnext.vercel.app)
 
-The project currently focuses on a clean chat foundation: streaming responses, model switching, authentication UI, markdown rendering, Supabase persistence, search, settings, exports, and a componentized App Router structure that can grow into uploads, RAG, and agents.
+The project currently focuses on a clean chat foundation: streaming responses, model switching, authentication UI, markdown rendering, Supabase persistence, file attachments, search, settings, exports, and a componentized App Router structure that can grow into RAG and agents.
 
 ## Features
 
@@ -16,6 +16,8 @@ The project currently focuses on a clean chat foundation: streaming responses, m
 - Chat search across loaded titles and messages
 - Settings panel for model, temperature, and system prompt
 - Chat export to Markdown and JSON
+- Image, PDF, text, and Markdown attachments
+- Persisted text extraction metadata for readable attachments
 - Markdown rendering with GitHub Flavored Markdown support
 - Clerk authentication UI
 - Next.js 16 `proxy.ts` convention
@@ -111,9 +113,9 @@ Do not commit `.env.local` or any real secret values. The repository includes `.
 
 ## Roadmap
 
-- File and image attachments
 - PDF export
 - Theme controls
+- OCR for scanned PDFs
 - Supabase-backed full-text search
 - RAG and agent workflows
 - Public landing page
