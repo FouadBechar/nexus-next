@@ -242,7 +242,13 @@ function getPdfExtractionError(error: unknown) {
 
 function getPdfExtractionDetail(error: unknown) {
   if (error instanceof PdfExtractionError) {
-    return error.detail;
+    return error.diagnostic ?? error.detail;
+  }
+
+  if (error instanceof Error) {
+    return `unknown_error: ${error.name}: ${error.message}`
+      .replace(/\s+/g, " ")
+      .slice(0, 240);
   }
 
   return "unknown_error";

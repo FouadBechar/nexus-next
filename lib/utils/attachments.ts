@@ -53,6 +53,12 @@ export function isImageAttachment(mimeType: string) {
   return mimeType.startsWith("image/");
 }
 
+function formatExtractionDetailLabel(detail: string) {
+  const [summary] = detail.split(":");
+
+  return summary.replaceAll("_", " ");
+}
+
 export function getAttachmentDisplayInfo(attachment: AttachmentLike) {
   const fileName = attachment.fileName ?? attachment.name ?? "Attachment";
   const mimeType = attachment.mimeType || attachment.type || "";
@@ -80,7 +86,9 @@ export function getAttachmentDisplayInfo(attachment: AttachmentLike) {
         ? attachment.extractionError === "encrypted_or_protected"
           ? "Extraction failed · protected PDF"
           : attachment.extractionDetail
-            ? `Extraction failed · ${attachment.extractionDetail.replaceAll("_", " ")}`
+            ? `Extraction failed · ${formatExtractionDetailLabel(
+                attachment.extractionDetail
+              )}`
             : "Extraction failed · parser issue"
         : aiReadable
           ? attachment.extractionTruncated

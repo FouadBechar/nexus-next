@@ -15,7 +15,8 @@ export class PdfExtractionError extends Error {
   constructor(
     message: string,
     public detail: PdfExtractionDetail,
-    public cause?: unknown
+    public cause?: unknown,
+    public diagnostic?: string
   ) {
     super(message);
     this.name = "PdfExtractionError";
@@ -49,11 +50,17 @@ export async function extractPdfText(file: File) {
       });
     } catch (fallbackError) {
       const detail = classifyPdfExtractionError(fallbackError);
+      const diagnostic = buildPdfExtractionDiagnostic(
+        detail,
+        primaryError,
+        fallbackError
+      );
 
       throw new PdfExtractionError(
-        `PDF text extraction failed after fallback parser attempt: ${detail}.`,
+        `PDF text extraction failed after fallback parser attempt: ${diagnostic}.`,
         detail,
-        fallbackError || primaryError
+        fallbackError || primaryError,
+        diagnostic
       );
     }
   }
@@ -100,11 +107,19 @@ function classifyPdfExtractionError(error: unknown): PdfExtractionDetail {
   const message = error instanceof Error ? error.message.toLowerCase() : "";
   const detail = `${name} ${message}`;
 
-  if (
-    detail.includes("password") ||
-    detail.includes("encrypted") ||
-    detail.includes("protected")
-  ) {
+  if (name.includes("passwordexception")) {
+    return "password_required";
+  }
+
+  if (name.includes("invalidpdfexception")) {
+    return "invalid_pdf";
+  }
+
+  if (name.includes("formaterror")) {
+    return "format_error";
+  }
+
+  if (detail.includes("password") || detail.includes("encrypted") || detail.includes("protected")) {
     return "password_required";
   }
 
@@ -133,4 +148,34 @@ function classifyPdfExtractionError(error: unknown): PdfExtractionDetail {
   }
 
   return "unknown_error";
+}
+
+function buildPdfExtractionDiagnostic(
+  detail: PdfExtractionDetail,
+  primaryError: unknown,
+  fallbackError: unknown
+) {
+  const fallbackSummary = summarizePdfError(fallbackError);
+  const primarySummary = summarizePdfError(primaryError);
+  const summaries =
+    primarySummary && primarySummary !== fallbackSummary
+      ? [fallbackSummary, `primary: ${primarySummary}`]
+      : [fallbackSummary];
+  const diagnostic = [detail, ...summaries.filter(Boolean)].join(": ");
+
+  return diagnostic.slice(0, 240);
+}
+
+function summarizePdfError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return "";
+  }
+
+  const name = error.name || "Error";
+  const message = error.message
+    .replace(/\s+/g, " ")
+    .replace(/[^\w .,:;()[\]#/-]/g, "")
+    .trim();
+
+  return message ? `${name}: ${message}` : name;
 }
