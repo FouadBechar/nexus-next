@@ -77,10 +77,11 @@ function ensurePdfCanvasPolyfills() {
     ImageData?: unknown;
     Path2D?: unknown;
   };
+  const existingPath2D = globals.Path2D;
 
   if (
     canvasPolyfillsLoaded ||
-    (globals.DOMMatrix && globals.ImageData && globals.Path2D)
+    (globals.DOMMatrix && globals.ImageData)
   ) {
     canvasPolyfillsLoaded = true;
     return;
@@ -95,6 +96,11 @@ function ensurePdfCanvasPolyfills() {
     );
 
     Reflect.apply(nodeRequire, undefined, [workerEntry]);
+
+    if (!existingPath2D) {
+      Reflect.deleteProperty(globals, "Path2D");
+    }
+
     canvasPolyfillsLoaded = true;
   } catch (error) {
     const diagnostic = [
