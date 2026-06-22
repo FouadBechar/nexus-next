@@ -1,73 +1,188 @@
 # Nexus Next
 
-Nexus Next is a modern multi-model AI chat workspace built with Next.js 16, React 19, Clerk, OpenRouter, and Supabase.
+<p align="center">
+  <img src="./public/logo.png" width="120" alt="Nexus Next Logo" />
+</p>
 
-Live beta: [https://nexusnext.vercel.app](https://nexusnext.vercel.app)
+<h1 align="center">Nexus Next</h1>
 
-The project currently focuses on a clean chat foundation: streaming responses, model switching, authentication UI, markdown rendering, Supabase persistence, file attachments, search, settings, exports, and a componentized App Router structure that can grow into RAG and agents.
+<p align="center">
+  Modern Multi-Model AI Workspace built with Next.js, React, OpenRouter, Google AI Studio, Clerk, and Supabase.
+</p>
+
+<p align="center">
+  <a href="https://nexusnext.vercel.app">Live Demo</a>
+</p>
+
+---
+
+## Overview
+
+Nexus Next is a modern multi-model AI chat workspace focused on providing a clean, extensible, and developer-friendly foundation for AI-powered applications.
+
+The project currently supports real-time streaming conversations, multiple AI providers, authentication, file attachments, chat persistence, exports, search, and customizable model settings.
+
+Its architecture is designed to scale toward advanced features such as Retrieval-Augmented Generation (RAG), AI agents, and workflow automation.
+
+---
+
+## Screenshots
+
+### Desktop
+
+![Desktop Screenshot](docs/screenshots/desktop.png)
+
+### Mobile
+
+![Mobile Screenshot](docs/screenshots/mobile.png)
+
+---
+
+## Feature Matrix
+
+| Feature                      | Status |
+| ---------------------------- | ------ |
+| Multi-model chat             | ✅      |
+| Streaming responses          | ✅      |
+| OpenRouter integration       | ✅      |
+| Google AI Studio integration | ✅      |
+| Gemini models                | ✅      |
+| Clerk authentication         | ✅      |
+| Supabase persistence         | ✅      |
+| Local chat storage           | ✅      |
+| Chat search                  | ✅      |
+| Chat export (Markdown)       | ✅      |
+| Chat export (JSON)           | ✅      |
+| File attachments             | ✅      |
+| PDF support                  | ✅      |
+| Markdown rendering           | ✅      |
+| Settings panel               | ✅      |
+| Stop generation              | ✅      |
+| Response regeneration        | ✅      |
+
+---
 
 ## Features
 
-- Multi-model chat through OpenRouter
-- Streaming assistant responses
-- Supabase chat and message persistence for signed-in users
-- Local chat history persistence for signed-out users
-- Chat create, rename, delete, regenerate, and stop-generation controls
-- Chat search across loaded titles and messages
-- Settings panel for model, temperature, and system prompt
-- Chat export to Markdown and JSON
-- Image, PDF, text, and Markdown attachments
-- Persisted text extraction metadata for readable attachments
-- Markdown rendering with GitHub Flavored Markdown support
-- Clerk authentication UI
-- Next.js 16 `proxy.ts` convention
-- Componentized chat UI and extracted hooks
+* Multi-model chat through OpenRouter and Google AI Studio
+* Real-time streaming assistant responses
+* Clerk authentication UI
+* Supabase-backed chat persistence
+* Local chat storage for signed-out users
+* Chat creation, rename, delete, regenerate, and stop-generation controls
+* Search across chat titles and messages
+* Custom model settings
+
+  * Model selection
+  * Temperature
+  * System prompt
+* Markdown rendering with GitHub Flavored Markdown
+* File attachment support
+
+  * Images
+  * PDFs
+  * Plain text files
+  * Markdown files
+* Persisted attachment text extraction metadata
+* Chat export to Markdown and JSON
+* Componentized App Router architecture
+* Reusable hooks and provider abstraction
+
+---
+
+## AI Providers
+
+Currently supported:
+
+* OpenRouter
+* Google AI Studio
+
+Tested models include:
+
+* GPT-4o Mini
+* Gemini 2.5 Flash
+* Gemini 2.5 Pro
+* Claude
+* DeepSeek
+
+The provider architecture is designed to support additional AI backends in the future.
+
+---
 
 ## Tech Stack
 
-- Next.js 16 App Router
-- React 19
-- TypeScript
-- Tailwind CSS 4
-- Clerk
-- OpenRouter
-- Supabase
-- React Markdown
+* Next.js 16 App Router
+* React 19
+* TypeScript
+* Tailwind CSS 4
+* Clerk
+* OpenRouter
+* Google AI Studio
+* Supabase
+* React Markdown
+
+---
+
+## Platform Support
+
+Nexus Next has been tested successfully on:
+
+| Platform          | Status |
+| ----------------- | ------ |
+| Windows 11        | ✅      |
+| Ubuntu Linux      | ✅      |
+| Vercel Deployment | ✅      |
+
+Tested with:
+
+* Node.js 22 LTS
+* pnpm 11
+
+---
 
 ## Getting Started
 
-Install dependencies:
+### Install dependencies
 
 ```bash
 pnpm install
 ```
 
-Create your local environment file:
+### Create environment variables
 
 ```bash
 cp .env.example .env.local
 ```
 
-Fill in the required values in `.env.local`:
+### Configure `.env.local`
 
 ```env
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
 CLERK_SECRET_KEY=
+
 OPENROUTER_API_KEY=
+GOOGLE_API_KEY=
+
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 ```
 
-Start the development server:
+### Start development server
 
 ```bash
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open:
 
-## Scripts
+```text
+http://localhost:3000
+```
+
+---
+
+## Available Scripts
 
 ```bash
 pnpm dev
@@ -76,48 +191,126 @@ pnpm start
 pnpm lint
 ```
 
+---
+
 ## Project Structure
 
-```txt
+```text
 app/
-  api/chat/route.ts
-  api/chats/
-  components/chat/
-  components/layout/
-  components/settings/
+  api/
+  components/
+    chat/
+    layout/
+    settings/
   hooks/
   types/
+
 lib/
   ai/
   markdown/
   supabase/
   utils/
-  supabase.ts
+
 proxy.ts
 ```
 
-Important modules:
+### Important Modules
 
-- `app/hooks/useChats.ts` manages local chat state and persistence.
-- `app/hooks/useStreamingChat.ts` manages send, stream, abort, and error state.
-- `app/hooks/useChatSettings.ts` manages persisted model behavior settings.
-- `lib/ai/models.ts` defines the available model registry.
-- `lib/ai/openrouter.ts` owns OpenRouter API integration.
-- `lib/markdown/renderer.tsx` owns markdown rendering.
-- `lib/utils/export-chat.ts` owns Markdown and JSON chat export.
-- `lib/supabase/server.ts` owns the server-only Supabase admin client.
+* `app/hooks/useChats.ts`
+
+  * Chat state management and persistence
+
+* `app/hooks/useStreamingChat.ts`
+
+  * Streaming, abort, loading, and error handling
+
+* `app/hooks/useChatSettings.ts`
+
+  * Persistent model configuration
+
+* `lib/ai/models.ts`
+
+  * Model registry
+
+* `lib/ai/openrouter.ts`
+
+  * OpenRouter integration
+
+* `lib/ai/providers/google.ts`
+
+  * Google AI Studio integration
+
+* `lib/markdown/renderer.tsx`
+
+  * Markdown rendering
+
+* `lib/utils/export-chat.ts`
+
+  * Markdown and JSON exports
+
+* `lib/supabase/server.ts`
+
+  * Server-side Supabase client
+
+---
 
 ## Environment Safety
 
-Do not commit `.env.local` or any real secret values. The repository includes `.env.example` only as a safe template.
+Never commit:
+
+```text
+.env.local
+```
+
+or any real secret values.
+
+The repository includes:
+
+```text
+.env.example
+```
+
+as a safe template for local development.
+
+---
 
 ## Roadmap
 
-- PDF export
-- Theme controls
-- OCR for scanned PDFs
-- Supabase-backed full-text search
-- RAG and agent workflows
-- Public landing page
+### Near Term
 
-See [docs/roadmap.md](docs/roadmap.md) for the fuller plan.
+* PDF export
+* Theme controls
+* OCR support for scanned PDFs
+* Improved attachment processing
+
+### Mid Term
+
+* Supabase full-text search
+* Shared conversations
+* Usage analytics
+* Better mobile experience
+
+### Long Term
+
+* Retrieval-Augmented Generation (RAG)
+* Agent workflows
+* Knowledge bases
+* Public landing page
+
+---
+
+## Contributing
+
+Contributions, suggestions, bug reports, and feature requests are welcome.
+
+If you find an issue or have an idea for improvement, feel free to open an issue or submit a pull request.
+
+---
+
+## License
+
+MIT License
+
+---
+
+Built with ❤️ using Next.js, React, OpenRouter, Google AI Studio, Clerk, and Supabase.
