@@ -1,6 +1,9 @@
 import "server-only";
+import path from "node:path";
+import { createRequire } from "node:module";
 
 const MAX_EXTRACTED_TEXT_CHARS = 60_000;
+let canvasPolyfillsLoaded = false;
 
 export type PdfExtractionDetail =
   | "password_required"
@@ -24,6 +27,8 @@ export class PdfExtractionError extends Error {
 }
 
 export async function extractPdfText(file: File) {
+  ensurePdfCanvasPolyfills();
+
   const { PDFParse } = await import("pdf-parse");
   const bytes = new Uint8Array(await file.arrayBuffer());
 
@@ -63,6 +68,46 @@ export async function extractPdfText(file: File) {
         diagnostic
       );
     }
+  }
+}
+
+function ensurePdfCanvasPolyfills() {
+  const globals = globalThis as typeof globalThis & {
+    DOMMatrix?: unknown;
+    ImageData?: unknown;
+    Path2D?: unknown;
+  };
+
+  if (
+    canvasPolyfillsLoaded ||
+    (globals.DOMMatrix && globals.ImageData && globals.Path2D)
+  ) {
+    canvasPolyfillsLoaded = true;
+    return;
+  }
+
+  try {
+    const nodeRequire = createRequire(import.meta.url);
+    const pdfParseEntry = nodeRequire.resolve("pdf-parse");
+    const workerEntry = path.resolve(
+      path.dirname(pdfParseEntry),
+      "../../worker/cjs/index.cjs"
+    );
+
+    Reflect.apply(nodeRequire, undefined, [workerEntry]);
+    canvasPolyfillsLoaded = true;
+  } catch (error) {
+    const diagnostic = [
+      "canvas_error",
+      summarizePdfError(error) || "PDF canvas polyfill could not be loaded",
+    ].join(": ");
+
+    throw new PdfExtractionError(
+      `PDF canvas polyfill could not be loaded: ${diagnostic}.`,
+      "canvas_error",
+      error,
+      diagnostic.slice(0, 240)
+    );
   }
 }
 
