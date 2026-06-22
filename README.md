@@ -313,4 +313,7 @@ MIT License
 
 ---
 
-Built with ❤️ using Next.js, React, OpenRouter, Google AI Studio, Clerk, and Supabase.
+Built with modern way using Next.js, React, OpenRouter, Google AI Studio, Clerk, and Supabase.
+
+See [docs/roadmap.md](docs/roadmap.md) for the fuller plan.
+
