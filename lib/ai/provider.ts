@@ -1,6 +1,5 @@
 import { getModelById } from "./models";
-import { streamGeminiChat } from "./gemini";
-import { streamOpenRouterChat } from "./openrouter";
+import { providerRegistry } from "./providers/registry";
 import type { StreamChatOptions } from "./types";
 
 export async function streamAiChat(options: StreamChatOptions) {
@@ -17,9 +16,5 @@ export async function streamAiChat(options: StreamChatOptions) {
     model: apiModel,
   };
 
-  if (apiProvider === "gemini") {
-    return streamGeminiChat(providerOptions);
-  }
-
-  return streamOpenRouterChat(providerOptions);
+  return providerRegistry.get(apiProvider).streamChat(providerOptions);
 }
