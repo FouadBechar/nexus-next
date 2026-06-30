@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest } from "next/server";
+import { AuthError, toErrorResponse } from "../../../lib/errors/api-error";
 import { getSupabaseAdmin } from "../../../lib/supabase/server";
 import type { Chat } from "../../types/chat";
 import type { Message } from "../../types/message";
@@ -37,7 +38,7 @@ async function getCurrentUserId() {
   const { userId } = await auth();
 
   if (!userId) {
-    throw new Error("Unauthorized");
+    throw new AuthError("Unauthorized");
   }
 
   return userId;
@@ -140,10 +141,10 @@ export async function GET() {
       chats: await toChats(chats ?? [], messages ?? [], attachments ?? []),
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to load chats.";
-    const status = message === "Unauthorized" ? 401 : 500;
-
-    return new Response(message, { status });
+    return toErrorResponse(error, {
+      fallbackMessage: "Failed to load chats.",
+      logMessage: "Failed to load chats.",
+    });
   }
 }
 
@@ -176,9 +177,9 @@ export async function POST(req: NextRequest) {
       } satisfies Chat,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to create chat.";
-    const status = message === "Unauthorized" ? 401 : 500;
-
-    return new Response(message, { status });
+    return toErrorResponse(error, {
+      fallbackMessage: "Failed to create chat.",
+      logMessage: "Failed to create chat.",
+    });
   }
 }

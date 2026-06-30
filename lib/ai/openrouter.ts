@@ -1,5 +1,6 @@
 import { buildProviderMessages } from "./messages";
 import { modelSupportsImages } from "./models";
+import { ProviderError } from "../errors/api-error";
 import type { StreamChatOptions } from "./types";
 
 export const DEFAULT_MAX_TOKENS = 2048;
@@ -58,14 +59,17 @@ export async function streamOpenRouterChat({
   if (!response.ok) {
     const error = await response.text();
 
-    throw new Error(
+    throw new ProviderError(
       error ||
-        `OpenRouter request failed with status ${response.status}. Try a shorter response length or another model.`
+        `OpenRouter request failed with status ${response.status}. Try a shorter response length or another model.`,
+      {
+        status: response.status >= 500 ? 502 : response.status,
+      }
     );
   }
 
   if (!response.body) {
-    throw new Error("OpenRouter response did not include a stream.");
+    throw new ProviderError("OpenRouter response did not include a stream.");
   }
 
   return new Response(response.body, {

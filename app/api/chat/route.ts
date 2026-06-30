@@ -4,6 +4,12 @@ import { z } from "zod";
 import { DEFAULT_MODEL_ID, getModelById } from "../../../lib/ai/models";
 import { streamAiChat } from "../../../lib/ai/provider";
 import {
+  AuthError,
+  RateLimitError,
+  ValidationError,
+  toErrorResponse,
+} from "../../../lib/errors/api-error";
+import {
   checkRateLimit,
   rateLimitHeaders,
 } from "../../../lib/security/rate-limit";
@@ -56,9 +62,7 @@ async function readJson(req: NextRequest) {
   try {
     return await req.json();
   } catch {
-    throw new Response("Request body must be valid JSON.", {
-      status: 400,
-    });
+    throw new ValidationError("Request body must be valid JSON.");
   }
 }
 
@@ -86,28 +90,13 @@ function getClientIp(req: NextRequest) {
   );
 }
 
-function getServerErrorMessage(error: unknown) {
-  if (!(error instanceof Error)) {
-    return "Internal Server Error";
-  }
-
-  const message = error.message.trim();
-
-  return (
-    message ||
-    "The chat provider failed to respond. Try Response Length: Short or switch models."
-  );
-}
-
 export async function POST(req: NextRequest) {
   try {
     const { userId } = await auth();
     const requireAuth = getBooleanEnv("NEXUS_REQUIRE_AUTH_FOR_CHAT");
 
     if (requireAuth && !userId) {
-      return new Response("Authentication is required to use chat.", {
-        status: 401,
-      });
+      throw new AuthError("Authentication is required to use chat.");
     }
 
     const rateLimit = checkRateLimit({
@@ -122,24 +111,19 @@ export async function POST(req: NextRequest) {
     });
 
     if (!rateLimit.allowed) {
-      return new Response("Too many chat requests. Please try again shortly.", {
+      throw new RateLimitError("Too many chat requests. Please try again shortly.", {
         headers: rateLimitHeaders(rateLimit),
-        status: 429,
       });
     }
 
     const parsed = chatRequestSchema.safeParse(await readJson(req));
 
     if (!parsed.success) {
-      return Response.json(
-        {
-          error: "Invalid chat request.",
+      throw new ValidationError("Invalid chat request.", {
+        details: {
           issues: parsed.error.flatten().fieldErrors,
         },
-        {
-          status: 400,
-        }
-      );
+      });
     }
 
     const { messages, model, responseLength, systemPrompt, temperature } =
@@ -147,9 +131,7 @@ export async function POST(req: NextRequest) {
     const selectedModel = model || DEFAULT_MODEL_ID;
 
     if (!getModelById(selectedModel)) {
-      return new Response("The selected model is not available.", {
-        status: 400,
-      });
+      throw new ValidationError("The selected model is not available.");
     }
 
     const safeResponseLength = isResponseLength(responseLength)
@@ -164,14 +146,12 @@ export async function POST(req: NextRequest) {
       temperature,
     });
   } catch (error) {
-    if (error instanceof Response) {
-      return error;
-    }
-
-    console.error(error);
-
-    return new Response(getServerErrorMessage(error), {
-      status: 500,
+    return toErrorResponse(error, {
+      fallbackMessage:
+        error instanceof Error && error.message.trim()
+          ? error.message
+          : "The chat provider failed to respond. Try Response Length: Short or switch models.",
+      logMessage: "Chat request failed.",
     });
   }
 }

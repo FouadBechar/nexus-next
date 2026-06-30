@@ -1,5 +1,10 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest } from "next/server";
+import {
+  AuthError,
+  ValidationError,
+  toErrorResponse,
+} from "../../../../lib/errors/api-error";
 import { getSupabaseAdmin } from "../../../../lib/supabase/server";
 
 type RouteContext = {
@@ -12,7 +17,7 @@ async function getCurrentUserId() {
   const { userId } = await auth();
 
   if (!userId) {
-    throw new Error("Unauthorized");
+    throw new AuthError("Unauthorized");
   }
 
   return userId;
@@ -27,7 +32,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     const trimmedTitle = title?.trim();
 
     if (!trimmedTitle) {
-      return new Response("Title is required.", { status: 400 });
+      throw new ValidationError("Title is required.");
     }
 
     const { error } = await getSupabaseAdmin()
@@ -43,10 +48,10 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 
     return Response.json({ ok: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to update chat.";
-    const status = message === "Unauthorized" ? 401 : 500;
-
-    return new Response(message, { status });
+    return toErrorResponse(error, {
+      fallbackMessage: "Failed to update chat.",
+      logMessage: "Failed to update chat.",
+    });
   }
 }
 
@@ -65,9 +70,9 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
 
     return Response.json({ ok: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to delete chat.";
-    const status = message === "Unauthorized" ? 401 : 500;
-
-    return new Response(message, { status });
+    return toErrorResponse(error, {
+      fallbackMessage: "Failed to delete chat.",
+      logMessage: "Failed to delete chat.",
+    });
   }
 }

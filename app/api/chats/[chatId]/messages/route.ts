@@ -1,5 +1,10 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest } from "next/server";
+import {
+  AuthError,
+  ValidationError,
+  toErrorResponse,
+} from "../../../../../lib/errors/api-error";
 import { getSupabaseAdmin } from "../../../../../lib/supabase/server";
 import type { Message } from "../../../../types/message";
 
@@ -13,7 +18,7 @@ async function getCurrentUserId() {
   const { userId } = await auth();
 
   if (!userId) {
-    throw new Error("Unauthorized");
+    throw new AuthError("Unauthorized");
   }
 
   return userId;
@@ -48,9 +53,7 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
     const { messages, title } = await req.json();
 
     if (!Array.isArray(messages) || !messages.every(isMessage)) {
-      return new Response("Messages must be a valid message array.", {
-        status: 400,
-      });
+      throw new ValidationError("Messages must be a valid message array.");
     }
 
     const supabase = getSupabaseAdmin();
@@ -66,7 +69,9 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
     if (chatError) throw chatError;
 
     if (!chat) {
-      return new Response("Chat not found.", { status: 404 });
+      throw new ValidationError("Chat not found.", {
+        status: 404,
+      });
     }
 
     const normalizedMessages = messages.map((message: Message) => ({
@@ -149,9 +154,9 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
 
     return Response.json({ ok: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to save messages.";
-    const status = message === "Unauthorized" ? 401 : 500;
-
-    return new Response(message, { status });
+    return toErrorResponse(error, {
+      fallbackMessage: "Failed to save messages.",
+      logMessage: "Failed to save messages.",
+    });
   }
 }

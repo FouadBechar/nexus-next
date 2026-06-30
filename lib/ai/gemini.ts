@@ -1,5 +1,6 @@
 import { buildProviderMessages } from "./messages";
 import { DEFAULT_MAX_TOKENS } from "./openrouter";
+import { ProviderError } from "../errors/api-error";
 import type { StreamChatOptions } from "./types";
 
 const GEMINI_OPENAI_URL =
@@ -54,11 +55,13 @@ export async function streamGeminiChat({
   if (!response.ok) {
     const error = await response.text();
 
-    throw new Error(error || "Gemini request failed.");
+    throw new ProviderError(error || "Gemini request failed.", {
+      status: response.status >= 500 ? 502 : response.status,
+    });
   }
 
   if (!response.body) {
-    throw new Error("Gemini response did not include a stream.");
+    throw new ProviderError("Gemini response did not include a stream.");
   }
 
   return new Response(response.body, {
@@ -69,4 +72,3 @@ export async function streamGeminiChat({
     },
   });
 }
-

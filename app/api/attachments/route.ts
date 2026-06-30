@@ -1,5 +1,12 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest } from "next/server";
+import {
+  AuthError,
+  StorageError,
+  ValidationError,
+  toErrorResponse,
+} from "../../../lib/errors/api-error";
+import { logger } from "../../../lib/logger";
 import { PdfExtractionError, extractPdfText } from "../../../lib/pdf/extract";
 import { getSupabaseAdmin } from "../../../lib/supabase/server";
 
@@ -62,7 +69,7 @@ async function getCurrentUserId() {
   const { userId } = await auth();
 
   if (!userId) {
-    throw new Error("Unauthorized");
+    throw new AuthError("Unauthorized");
   }
 
   return userId;
@@ -82,21 +89,19 @@ export async function POST(req: NextRequest) {
       typeof content !== "string" ||
       typeof messageId !== "string"
     ) {
-      return new Response("chatId, content, and messageId are required.", {
-        status: 400,
-      });
+      throw new ValidationError("chatId, content, and messageId are required.");
     }
 
     if (!(file instanceof File)) {
-      return new Response("A file is required.", { status: 400 });
+      throw new ValidationError("A file is required.");
     }
 
     if (!ALLOWED_MIME_TYPES.has(file.type)) {
-      return new Response("This file type is not supported.", { status: 400 });
+      throw new ValidationError("This file type is not supported.");
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return new Response("File size must be 10 MB or less.", { status: 400 });
+      throw new ValidationError("File size must be 10 MB or less.");
     }
 
     const supabase = getSupabaseAdmin();
@@ -111,7 +116,9 @@ export async function POST(req: NextRequest) {
     if (chatError) throw chatError;
 
     if (!chat) {
-      return new Response("Chat not found.", { status: 404 });
+      throw new ValidationError("Chat not found.", {
+        status: 404,
+      });
     }
 
     const { error: messageError } = await supabase.from("messages").upsert(
@@ -151,7 +158,10 @@ export async function POST(req: NextRequest) {
         extractionTruncated = extraction.truncated;
         extractionStatus = extractedText.trim() ? "readable" : "empty";
       } catch (error) {
-        console.error(error);
+        logger.warn("PDF extraction failed.", {
+          error,
+          fileName: file.name,
+        });
         extractionStatus = "failed";
         extractionError = getPdfExtractionError(error);
         extractionDetail = getPdfExtractionDetail(error);
@@ -170,7 +180,11 @@ export async function POST(req: NextRequest) {
         upsert: false,
       });
 
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+      throw new StorageError("Attachment upload failed.", {
+        cause: uploadError,
+      });
+    }
 
     const { error: insertError } = await supabase
       .from("message_attachments")
@@ -191,7 +205,11 @@ export async function POST(req: NextRequest) {
         extraction_truncated: extractionTruncated,
       });
 
-    if (insertError) throw insertError;
+    if (insertError) {
+      throw new StorageError("Attachment metadata could not be saved.", {
+        cause: insertError,
+      });
+    }
 
     const { data } = await supabase.storage
       .from(ATTACHMENTS_BUCKET)
@@ -212,10 +230,10 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Upload failed.";
-    const status = message === "Unauthorized" ? 401 : 500;
-
-    return new Response(message, { status });
+    return toErrorResponse(error, {
+      fallbackMessage: "Upload failed.",
+      logMessage: "Attachment upload failed.",
+    });
   }
 }
 
