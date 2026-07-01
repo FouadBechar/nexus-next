@@ -1,3 +1,5 @@
+import type { AttachmentPipelineStatus } from "../../lib/attachments/types";
+
 export type MessageAttachment = {
   id: string;
   fileName: string;
@@ -9,6 +11,7 @@ export type MessageAttachment = {
   extractionDetail?: string;
   extractionTruncated?: boolean;
   extractedText?: string;
+  pipelineStatus?: AttachmentPipelineStatus;
 };
 
 export type Message = {

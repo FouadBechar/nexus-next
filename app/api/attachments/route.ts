@@ -6,24 +6,15 @@ import {
   ValidationError,
   toErrorResponse,
 } from "../../../lib/errors/api-error";
-import { logger } from "../../../lib/logger";
-import { PdfExtractionError, extractPdfText } from "../../../lib/pdf/extract";
+import {
+  ALLOWED_ATTACHMENT_MIME_TYPES,
+  ATTACHMENTS_BUCKET,
+  MAX_ATTACHMENT_FILE_SIZE,
+  runAttachmentPipeline,
+} from "../../../lib/attachments/pipeline";
 import { getSupabaseAdmin } from "../../../lib/supabase/server";
 
 export const runtime = "nodejs";
-
-const ATTACHMENTS_BUCKET = "chat-attachments";
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
-const MAX_EXTRACTED_TEXT_CHARS = 60_000;
-const TEXT_MIME_TYPES = new Set(["text/plain", "text/markdown"]);
-const ALLOWED_MIME_TYPES = new Set([
-  "image/png",
-  "image/jpeg",
-  "image/webp",
-  "application/pdf",
-  "text/plain",
-  "text/markdown",
-]);
 
 function safeFileName(value: string) {
   return (
@@ -33,36 +24,6 @@ function safeFileName(value: string) {
       .replace(/[^a-z0-9.]+/g, "-")
       .replace(/^-+|-+$/g, "") || "attachment"
   );
-}
-
-function isTextFile(file: File) {
-  const lowerName = file.name.toLowerCase();
-
-  return (
-    TEXT_MIME_TYPES.has(file.type) ||
-    lowerName.endsWith(".txt") ||
-    lowerName.endsWith(".md") ||
-    lowerName.endsWith(".markdown")
-  );
-}
-
-async function extractTextFile(file: File) {
-  const text = (await file.text()).trim();
-
-  if (!text) {
-    return {
-      extractedText: "",
-      truncated: false,
-    };
-  }
-
-  return {
-    extractedText:
-      text.length > MAX_EXTRACTED_TEXT_CHARS
-        ? text.slice(0, MAX_EXTRACTED_TEXT_CHARS)
-        : text,
-    truncated: text.length > MAX_EXTRACTED_TEXT_CHARS,
-  };
 }
 
 async function getCurrentUserId() {
@@ -96,11 +57,11 @@ export async function POST(req: NextRequest) {
       throw new ValidationError("A file is required.");
     }
 
-    if (!ALLOWED_MIME_TYPES.has(file.type)) {
+    if (!ALLOWED_ATTACHMENT_MIME_TYPES.has(file.type)) {
       throw new ValidationError("This file type is not supported.");
     }
 
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > MAX_ATTACHMENT_FILE_SIZE) {
       throw new ValidationError("File size must be 10 MB or less.");
     }
 
@@ -137,36 +98,7 @@ export async function POST(req: NextRequest) {
 
     if (messageError) throw messageError;
 
-    let extractedText = "";
-    let extractionTruncated = false;
-    let extractionStatus: "readable" | "empty" | "failed" | undefined;
-    let extractionError:
-      | "parser_failed"
-      | "encrypted_or_protected"
-      | undefined;
-    let extractionDetail: string | undefined;
-
-    if (isTextFile(file)) {
-      const extraction = await extractTextFile(file);
-      extractedText = extraction.extractedText;
-      extractionTruncated = extraction.truncated;
-      extractionStatus = extractedText.trim() ? "readable" : "empty";
-    } else if (file.type === "application/pdf") {
-      try {
-        const extraction = await extractPdfText(file);
-        extractedText = extraction.extractedText;
-        extractionTruncated = extraction.truncated;
-        extractionStatus = extractedText.trim() ? "readable" : "empty";
-      } catch (error) {
-        logger.warn("PDF extraction failed.", {
-          error,
-          fileName: file.name,
-        });
-        extractionStatus = "failed";
-        extractionError = getPdfExtractionError(error);
-        extractionDetail = getPdfExtractionDetail(error);
-      }
-    }
+    const pipelineResult = await runAttachmentPipeline(file);
 
     const attachmentId = crypto.randomUUID();
     const storagePath = `${userId}/${chatId}/${attachmentId}-${safeFileName(
@@ -198,11 +130,11 @@ export async function POST(req: NextRequest) {
         file_name: file.name,
         mime_type: file.type,
         file_size: file.size,
-        extracted_text: extractedText || null,
-        extraction_detail: extractionDetail ?? null,
-        extraction_error: extractionError ?? null,
-        extraction_status: extractionStatus ?? null,
-        extraction_truncated: extractionTruncated,
+        extracted_text: pipelineResult.extractedText || null,
+        extraction_detail: pipelineResult.extractionDetail ?? null,
+        extraction_error: pipelineResult.extractionError ?? null,
+        extraction_status: pipelineResult.extractionStatus ?? null,
+        extraction_truncated: pipelineResult.extractionTruncated,
       });
 
     if (insertError) {
@@ -221,11 +153,12 @@ export async function POST(req: NextRequest) {
         fileName: file.name,
         mimeType: file.type,
         fileSize: file.size,
-        extractedText,
-        extractionDetail,
-        extractionError,
-        extractionStatus,
-        extractionTruncated,
+        extractedText: pipelineResult.extractedText,
+        extractionDetail: pipelineResult.extractionDetail,
+        extractionError: pipelineResult.extractionError,
+        extractionStatus: pipelineResult.extractionStatus,
+        extractionTruncated: pipelineResult.extractionTruncated,
+        pipelineStatus: pipelineResult.pipelineStatus,
         url: data?.signedUrl ?? "",
       },
     });
@@ -235,39 +168,4 @@ export async function POST(req: NextRequest) {
       logMessage: "Attachment upload failed.",
     });
   }
-}
-
-function getPdfExtractionError(error: unknown) {
-  if (
-    error instanceof PdfExtractionError &&
-    error.detail === "password_required"
-  ) {
-    return "encrypted_or_protected" as const;
-  }
-
-  const message = error instanceof Error ? error.message.toLowerCase() : "";
-
-  if (
-    message.includes("password") ||
-    message.includes("encrypted") ||
-    message.includes("protected")
-  ) {
-    return "encrypted_or_protected" as const;
-  }
-
-  return "parser_failed" as const;
-}
-
-function getPdfExtractionDetail(error: unknown) {
-  if (error instanceof PdfExtractionError) {
-    return error.diagnostic ?? error.detail;
-  }
-
-  if (error instanceof Error) {
-    return `unknown_error: ${error.name}: ${error.message}`
-      .replace(/\s+/g, " ")
-      .slice(0, 240);
-  }
-
-  return "unknown_error";
 }
