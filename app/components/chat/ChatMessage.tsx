@@ -82,7 +82,7 @@ function AttachmentCard({
     <a
       href={attachment.url}
       target="_blank"
-      rel="noreferrer"
+      rel="noreferrer noopener"
       className="block overflow-hidden rounded-2xl border border-gray-700 bg-black/30"
     >
       {attachment.mimeType.startsWith("image/") && attachment.url ? (

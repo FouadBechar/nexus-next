@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
       throw new AuthError("Authentication is required to use chat.");
     }
 
-    const rateLimit = checkRateLimit({
+    const rateLimit = await checkRateLimit({
       identifier: userId ? `user:${userId}` : `guest:${getClientIp(req)}`,
       limit: userId
         ? getIntegerEnv("NEXUS_SIGNED_IN_CHAT_LIMIT", SIGNED_IN_CHAT_LIMIT)

@@ -1,5 +1,6 @@
 import { buildProviderMessages } from "./messages";
 import { modelSupportsImages } from "./models";
+import { getAppTitle, getAppUrl } from "../config/app";
 import { ProviderError } from "../errors/api-error";
 import type { StreamChatOptions } from "./types";
 
@@ -44,8 +45,8 @@ export async function streamOpenRouterChat({
     headers: {
       Authorization: `Bearer ${getOpenRouterApiKey()}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": "http://localhost:3000",
-      "X-Title": "Nexus Next",
+      "HTTP-Referer": getAppUrl(),
+      "X-Title": getAppTitle(),
     },
     body: JSON.stringify({
       model,
@@ -87,8 +88,8 @@ export async function askOpenRouter(message: string) {
     headers: {
       "Authorization": `Bearer ${getOpenRouterApiKey()}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": "http://localhost:3000",
-      "X-Title": "Nexus Next",
+      "HTTP-Referer": getAppUrl(),
+      "X-Title": getAppTitle(),
     },
     body: JSON.stringify({
       model: "openai/gpt-4o-mini", 
