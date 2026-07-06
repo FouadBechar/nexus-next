@@ -1,7 +1,10 @@
-import { streamGeminiChat } from "../gemini";
 import type { AiProvider } from "./types";
 
 export const geminiProvider: AiProvider = {
   id: "gemini",
-  streamChat: streamGeminiChat,
+  async streamChat(request) {
+    const { streamGeminiChat } = await import("../gemini");
+
+    return streamGeminiChat(request);
+  },
 };

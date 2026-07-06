@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node node_modules/typescript/bin/tsc -p tsconfig.test.json && node scripts/run-unit-tests.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.63",
