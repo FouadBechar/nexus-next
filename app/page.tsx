@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { ChatInput } from "./components/chat/ChatInput";
 import { ChatMessage } from "./components/chat/ChatMessage";
 import { ChatSidebar } from "./components/chat/ChatSidebar";
@@ -56,24 +56,40 @@ export default function Home() {
     `${activeChatId}:${activeChat?.messages.length ?? 0}:${currentResponse}`
   );
 
-  function handleCreateNewChat() {
+  const closeSidebar = useCallback(() => {
+    setSidebarOpen(false);
+  }, []);
+
+  const openSidebar = useCallback(() => {
+    setSidebarOpen(true);
+  }, []);
+
+  const openSettings = useCallback(() => {
+    setSettingsOpen(true);
+  }, []);
+
+  const closeSettings = useCallback(() => {
+    setSettingsOpen(false);
+  }, []);
+
+  const handleCreateNewChat = useCallback(() => {
     createNewChat();
     setSidebarOpen(false);
-  }
+  }, [createNewChat]);
 
-  function handleSelectChat(id: string) {
+  const handleSelectChat = useCallback((id: string) => {
     setActiveChatId(id);
     setSidebarOpen(false);
-  }
+  }, [setActiveChatId]);
 
-  function handleRenameChat(id: string) {
+  const handleRenameChat = useCallback((id: string) => {
     const title = prompt("Rename chat");
     if (!title) return;
 
     renameChat(id, title);
-  }
+  }, [renameChat]);
 
-  function handleSendMessage(customText?: string, files?: File[]) {
+  const handleSendMessage = useCallback((customText?: string, files?: File[]) => {
     return sendMessage({
       activeChat,
       activeChatId,
@@ -83,9 +99,9 @@ export default function Home() {
       onClearInput: () => setInput(""),
       updateChatMessages,
     });
-  }
+  }, [activeChat, activeChatId, input, sendMessage, settings, updateChatMessages]);
 
-  function handleRegenerateMessage(userMessageIndex: number) {
+  const handleRegenerateMessage = useCallback((userMessageIndex: number) => {
     if (!activeChat) return;
 
     const userMessage = activeChat.messages[userMessageIndex];
@@ -102,13 +118,13 @@ export default function Home() {
       onClearInput: () => undefined,
       updateChatMessages,
     });
-  }
+  }, [activeChat, activeChatId, sendMessage, settings, updateChatMessages]);
 
-  function copyText(text: string) {
+  const copyText = useCallback((text: string) => {
     navigator.clipboard.writeText(text);
-  }
+  }, []);
 
-  function regenerateLast() {
+  const regenerateLast = useCallback(() => {
     if (!activeChat) return;
 
     let lastUserMessageIndex = -1;
@@ -123,19 +139,29 @@ export default function Home() {
     if (lastUserMessageIndex === -1) return;
 
     handleRegenerateMessage(lastUserMessageIndex);
-  }
+  }, [activeChat, handleRegenerateMessage]);
 
-  function exportMarkdown() {
+  const exportMarkdown = useCallback(() => {
     if (!activeChat || activeChat.messages.length === 0) return;
 
     exportChatAsMarkdown(activeChat);
-  }
+  }, [activeChat]);
 
-  function exportJson() {
+  const exportJson = useCallback(() => {
     if (!activeChat || activeChat.messages.length === 0) return;
 
     exportChatAsJson(activeChat);
-  }
+  }, [activeChat]);
+
+  const handleModelChange = useCallback(
+    (model: string) => updateSettings({ model }),
+    [updateSettings]
+  );
+
+  const handleSendInput = useCallback(
+    (files?: File[]) => handleSendMessage(undefined, files),
+    [handleSendMessage]
+  );
 
   return (
     <main className="flex h-screen overflow-hidden bg-black text-white">
@@ -143,7 +169,7 @@ export default function Home() {
         activeChatId={activeChatId}
         chats={chats}
         open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
+        onClose={closeSidebar}
         onCreateChat={handleCreateNewChat}
         onDeleteChat={deleteChat}
         onRenameChat={handleRenameChat}
@@ -153,14 +179,14 @@ export default function Home() {
       <section className="flex min-w-0 flex-1 flex-col">
         <Header
           isSignedIn={isSignedIn}
-          onOpenSidebar={() => setSidebarOpen(true)}
-          onOpenSettings={() => setSettingsOpen(true)}
+          onOpenSidebar={openSidebar}
+          onOpenSettings={openSettings}
         />
 
         <ModelSelector
           models={MODELS}
           selectedModel={settings.model}
-          onChange={(model) => updateSettings({ model })}
+          onChange={handleModelChange}
         />
 
         {activeChat?.messages.length === 0 && <EmptyState />}
@@ -168,7 +194,7 @@ export default function Home() {
         <div className="min-w-0 flex-1 space-y-6 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
           {activeChat?.messages.map((message, index) => (
             <ChatMessage
-              key={`${message.createdAt ?? index}-${message.role}`}
+              key={message.id ?? `${message.createdAt ?? index}-${message.role}`}
               message={message}
               modelSupportsImages={selectedModelSupportsImages}
               onCopy={copyText}
@@ -193,7 +219,7 @@ export default function Home() {
           onExportJson={exportJson}
           onExportMarkdown={exportMarkdown}
           onRegenerate={regenerateLast}
-          onSend={(files) => handleSendMessage(undefined, files)}
+          onSend={handleSendInput}
           onStop={stopGeneration}
         />
       </section>
@@ -202,7 +228,7 @@ export default function Home() {
         models={MODELS}
         open={settingsOpen}
         settings={settings}
-        onClose={() => setSettingsOpen(false)}
+        onClose={closeSettings}
         onReset={resetSettings}
         onUpdate={updateSettings}
       />

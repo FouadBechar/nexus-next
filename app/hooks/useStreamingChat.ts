@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { Chat } from "../types/chat";
 import type { Message, MessageAttachment } from "../types/message";
 import type { ChatSettings } from "../types/settings";
@@ -297,7 +297,7 @@ export function useStreamingChat() {
   const [error, setError] = useState("");
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  async function sendMessage({
+  const sendMessage = useCallback(async ({
     activeChat,
     activeChatId,
     attachments = [],
@@ -307,7 +307,7 @@ export function useStreamingChat() {
     settings,
     onClearInput,
     updateChatMessages,
-  }: SendMessageOptions) {
+  }: SendMessageOptions) => {
     if ((!text.trim() && attachments.length === 0) || !activeChat || loading) {
       return;
     }
@@ -505,14 +505,14 @@ export function useStreamingChat() {
       setCurrentResponse("");
       setLoading(false);
     }
-  }
+  }, [loading]);
 
-  function stopGeneration() {
+  const stopGeneration = useCallback(() => {
     abortControllerRef.current?.abort();
 
     setLoading(false);
     setCurrentResponse("");
-  }
+  }, []);
 
   return {
     currentResponse,

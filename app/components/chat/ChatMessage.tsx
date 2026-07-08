@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useMemo } from "react";
 import type { Message } from "../../types/message";
 import { MarkdownRenderer } from "../../../lib/markdown/renderer";
 import { getAttachmentDisplayInfo } from "../../../lib/utils/attachments";
@@ -10,11 +11,16 @@ type ChatMessageProps = {
   onCopy: (text: string) => void;
 };
 
-export function ChatMessage({
+export const ChatMessage = memo(function ChatMessage({
   message,
   modelSupportsImages = false,
   onCopy,
 }: ChatMessageProps) {
+  const createdAtLabel = useMemo(
+    () => (message.createdAt ? new Date(message.createdAt).toLocaleTimeString() : ""),
+    [message.createdAt]
+  );
+
   return (
     <div
       className={`min-w-0 flex ${
@@ -44,7 +50,7 @@ export function ChatMessage({
 
         <div className="mt-4 flex min-w-0 items-center justify-between gap-3 border-t border-gray-700 pt-4">
           <span className="text-xs text-gray-400">
-            {message.createdAt ? new Date(message.createdAt).toLocaleTimeString() : ""}
+            {createdAtLabel}
           </span>
 
           <button
@@ -57,26 +63,40 @@ export function ChatMessage({
       </div>
     </div>
   );
-}
+});
 
-function AttachmentCard({
+const AttachmentCard = memo(function AttachmentCard({
   attachment,
   modelSupportsImages,
 }: {
   attachment: NonNullable<Message["attachments"]>[number];
   modelSupportsImages: boolean;
 }) {
-  const displayInfo = getAttachmentDisplayInfo({
-    extractionDetail: attachment.extractionDetail,
-    extractionError: attachment.extractionError,
-    extractionStatus: attachment.extractionStatus,
-    extractionTruncated: attachment.extractionTruncated,
-    extractedText: attachment.extractedText,
-    fileName: attachment.fileName,
-    fileSize: attachment.fileSize,
-    mimeType: attachment.mimeType,
-    modelSupportsImages,
-  });
+  const displayInfo = useMemo(
+    () =>
+      getAttachmentDisplayInfo({
+        extractionDetail: attachment.extractionDetail,
+        extractionError: attachment.extractionError,
+        extractionStatus: attachment.extractionStatus,
+        extractionTruncated: attachment.extractionTruncated,
+        extractedText: attachment.extractedText,
+        fileName: attachment.fileName,
+        fileSize: attachment.fileSize,
+        mimeType: attachment.mimeType,
+        modelSupportsImages,
+      }),
+    [
+      attachment.extractionDetail,
+      attachment.extractionError,
+      attachment.extractionStatus,
+      attachment.extractionTruncated,
+      attachment.extractedText,
+      attachment.fileName,
+      attachment.fileSize,
+      attachment.mimeType,
+      modelSupportsImages,
+    ]
+  );
 
   return (
     <a
@@ -115,4 +135,4 @@ function AttachmentCard({
       </div>
     </a>
   );
-}
+});
