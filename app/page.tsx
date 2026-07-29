@@ -164,7 +164,7 @@ export default function Home() {
   );
 
   return (
-    <main className="flex h-screen overflow-hidden bg-black text-white">
+    <main className="flex h-screen overflow-hidden bg-zinc-950 text-white">
       <ChatSidebar
         activeChatId={activeChatId}
         chats={chats}
@@ -176,7 +176,7 @@ export default function Home() {
         onSelectChat={handleSelectChat}
       />
 
-      <section className="flex min-w-0 flex-1 flex-col">
+      <section className="flex min-w-0 flex-1 flex-col border-l border-white/5">
         <Header
           isSignedIn={isSignedIn}
           onOpenSidebar={openSidebar}
@@ -191,7 +191,7 @@ export default function Home() {
 
         {activeChat?.messages.length === 0 && <EmptyState />}
 
-        <div className="min-w-0 flex-1 space-y-6 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+        <div className="min-w-0 flex-1 space-y-5 overflow-y-auto overflow-x-hidden bg-zinc-950 p-4 sm:space-y-6 sm:p-6">
           {activeChat?.messages.map((message, index) => (
             <ChatMessage
               key={message.id ?? `${message.createdAt ?? index}-${message.role}`}

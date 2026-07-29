@@ -28,10 +28,10 @@ export const ChatMessage = memo(function ChatMessage({
       }`}
     >
       <div
-        className={`min-w-0 max-w-[min(85%,_56rem)] animate-in overflow-hidden rounded-3xl px-5 py-4 text-[15px] leading-8 shadow-lg duration-300 fade-in ${
+        className={`min-w-0 max-w-[min(88%,_58rem)] animate-in overflow-hidden rounded-2xl px-5 py-4 text-[15px] leading-7 shadow-lg duration-300 fade-in sm:px-6 ${
           message.role === "user"
-            ? "bg-blue-600 text-white"
-            : "border border-gray-800 bg-gradient-to-br from-gray-900 to-gray-800"
+            ? "bg-blue-600 text-white shadow-blue-950/20"
+            : "border border-gray-800 bg-gray-950 shadow-black/20"
         }`}
       >
         <MarkdownRenderer content={message.content} />
@@ -48,14 +48,14 @@ export const ChatMessage = memo(function ChatMessage({
           </div>
         )}
 
-        <div className="mt-4 flex min-w-0 items-center justify-between gap-3 border-t border-gray-700 pt-4">
-          <span className="text-xs text-gray-400">
+        <div className="mt-4 flex min-w-0 items-center justify-between gap-3 border-t border-white/10 pt-3">
+          <span className="text-xs text-gray-500">
             {createdAtLabel}
           </span>
 
           <button
             onClick={() => onCopy(message.content)}
-            className="text-xs text-gray-400 hover:text-white"
+            className="rounded-md px-2 py-1 text-xs font-medium text-gray-400 transition hover:bg-white/5 hover:text-white"
           >
             Copy
           </button>
@@ -103,7 +103,7 @@ const AttachmentCard = memo(function AttachmentCard({
       href={attachment.url}
       target="_blank"
       rel="noreferrer noopener"
-      className="block overflow-hidden rounded-2xl border border-gray-700 bg-black/30"
+      className="block overflow-hidden rounded-lg border border-gray-700 bg-black/30 transition hover:border-gray-500 hover:bg-black/40"
     >
       {attachment.mimeType.startsWith("image/") && attachment.url ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -114,16 +114,19 @@ const AttachmentCard = memo(function AttachmentCard({
         />
       ) : (
         <div className="p-4 text-sm text-gray-300">
-          <div className="truncate font-medium">{attachment.fileName}</div>
+          <div className="truncate font-medium text-gray-100">
+            {attachment.fileName}
+          </div>
         </div>
       )}
 
       <div className="border-t border-gray-800 px-4 py-3 text-xs text-gray-400">
         <div className="flex flex-wrap items-center gap-2">
           <span>{displayInfo.typeLabel}</span>
+          <span className="text-gray-600">/</span>
           <span>{displayInfo.fileSizeLabel}</span>
           <span
-            className={`rounded-full px-2 py-0.5 ${
+            className={`rounded-md px-2 py-0.5 font-medium ${
               displayInfo.aiReadable
                 ? "bg-emerald-500/10 text-emerald-300"
                 : "bg-gray-800 text-gray-400"

@@ -10,7 +10,7 @@ type MarkdownRendererProps = {
 
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   return (
-    <div className="min-w-0 overflow-hidden break-words">
+    <div className="min-w-0 overflow-hidden break-words [&>*+*]:mt-4 [&_blockquote]:border-l-2 [&_blockquote]:border-gray-600 [&_blockquote]:pl-4 [&_blockquote]:text-gray-300 [&_li+li]:mt-1.5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:leading-7 [&_ul]:list-disc [&_ul]:pl-5">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         urlTransform={safeUrlTransform}
@@ -28,7 +28,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
           code: ({ children, className, ...props }) => (
             <code
               {...props}
-              className={`max-w-full rounded bg-black/40 px-1.5 py-0.5 font-mono text-sm break-words ${
+              className={`max-w-full rounded-md bg-black/45 px-1.5 py-0.5 font-mono text-sm break-words text-gray-100 ${
                 className ?? ""
               }`}
             >
@@ -36,7 +36,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
             </code>
           ),
           pre: ({ children }) => (
-            <pre className="my-4 max-w-full overflow-x-auto rounded-2xl border border-gray-700 bg-black/50 p-4">
+            <pre className="my-4 max-w-full overflow-x-auto rounded-lg border border-gray-700 bg-black/55 p-4 text-sm leading-6">
               {children}
             </pre>
           ),

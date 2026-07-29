@@ -15,8 +15,8 @@ importers:
         specifier: ^3.0.179
         version: 3.0.179(react@19.2.4)(zod@4.4.3)
       '@clerk/nextjs':
-        specifier: ^7.3.3
-        version: 7.3.3(next@16.2.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        specifier: ^7.6.2
+        version: 7.6.2(next@16.2.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@supabase/supabase-js':
         specifier: ^2.105.4
         version: 2.105.4
@@ -181,27 +181,27 @@ packages:
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
 
-  '@clerk/backend@3.4.7':
-    resolution: {integrity: sha512-zAELfaYtrlxlxxB6PT3EHPsHck6IPuyTQSKm7hWQqXp9GoFOM6wKOflFZgI0Q2M1C5SgrkDcrMNchkWXRwbsQw==}
+  '@clerk/backend@3.13.2':
+    resolution: {integrity: sha512-z6rPQzEj1SbGmjMoyGnECY1R7YrcD4dJILlWLXFvSUsWxb8csAYzcXp50T2kVtV3ThlcjOMrI0oDQyqvTdt65A==}
     engines: {node: '>=20.9.0'}
 
-  '@clerk/nextjs@7.3.3':
-    resolution: {integrity: sha512-MvDczhXM5v9H/a6qd7O52Ydj6CNtgSSPBrpC6HzlfB+nkP8GrsRl/sH+jFrGmRnLsT7Q7A9TESXkrbuHoeGAeQ==}
+  '@clerk/nextjs@7.6.2':
+    resolution: {integrity: sha512-PetWyCwKYqIzY44ABU4DbFmQz0JBtmyybfy7Cy1DlnTxS4QNgo/TQEp2VcJLQWVmhPef/QmAo6NZSZIV/c2Z3g==}
     engines: {node: '>=20.9.0'}
     peerDependencies:
       next: ^15.2.8 || ^15.3.8 || ^15.4.10 || ^15.5.9 || ^15.6.0-0 || ^16.0.10 || ^16.1.0-0
       react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
       react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
 
-  '@clerk/react@6.6.2':
-    resolution: {integrity: sha512-eLev3C21yh2vqyvEBfXpc1QHa4q+wxbtRdTtBG0fCI+tMQUim8TIS300AJAciM6ox8tgInTWwIeIxr5jiYsvtw==}
+  '@clerk/react@6.12.8':
+    resolution: {integrity: sha512-F/wECRGlE9JtBcS7XqutCQAI5gKXVaOSamAH9x6YPtAP0hMKlNJIaHuLEjVMKNbOerMFm3iV6k8cZ+6JnDFcMQ==}
     engines: {node: '>=20.9.0'}
     peerDependencies:
       react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
       react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
 
-  '@clerk/shared@4.10.2':
-    resolution: {integrity: sha512-2RXGaCV94U2wYWaMQZA/AhVkqjcSx8f+oVjh6wgr4yXDmZ24BQRjPJ+K4L6IHiB/agoaXtKWJ0GI8InRZjo9/g==}
+  '@clerk/shared@4.25.8':
+    resolution: {integrity: sha512-ob0E/YJAoDTO4CzHI0nasXGsJUc1cFo0jxPO8xVz/A0+C1R0k1da0EJD8L6F03DzKMn3efSa4mOy3BXTpBVZqw==}
     engines: {node: '>=20.9.0'}
     peerDependencies:
       react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
@@ -1708,9 +1708,9 @@ packages:
     resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
     hasBin: true
 
-  js-cookie@3.0.5:
-    resolution: {integrity: sha512-cEiJEAEoIbWfCZYKWhVwFuvPX1gETRYPw6LlaTKoxD3s2AkXzkCjnp6h0V77ozyqj0jakteJ4YqDJT830+lVGw==}
-    engines: {node: '>=14'}
+  js-cookie@3.0.7:
+    resolution: {integrity: sha512-z/wZZgDrkNV1eA0ULjM/F9/50Ya8fbzgKneSpoPsXSGd0KnpdtHfOZWK+GcwLk+EZbS4F9RBhU+K2RgzuDaItw==}
+    engines: {node: '>=20'}
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
@@ -2335,9 +2335,6 @@ packages:
   standardwebhooks@1.0.0:
     resolution: {integrity: sha512-BbHGOQK9olHPMvQNHWul6MYlrRTAOKn03rOe4A8O3CLWhNf4YHBqq2HJKKC+sfqpxiBY52pNeesD6jIiLDz8jg==}
 
-  std-env@3.10.0:
-    resolution: {integrity: sha512-5GS12FdOZNliM5mAOxFRg7Ir0pWz8MdpYm6AY6VPkGpbA7ZzmbzNcBJQ0GPvvyWgcY7QAhCgf9Uy89I03faLkg==}
-
   stop-iteration-iterator@1.1.0:
     resolution: {integrity: sha512-eLoXW/DHyl62zxY4SCaIgnRhuMr6ri4juEYARS8E6sCEqzKpOiE521Ucofdx+KnDZl5xmvGYaaKCk5FEOxJCoQ==}
     engines: {node: '>= 0.4'}
@@ -2709,40 +2706,39 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
-  '@clerk/backend@3.4.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+  '@clerk/backend@3.13.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
-      '@clerk/shared': 4.10.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@clerk/shared': 4.25.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       standardwebhooks: 1.0.0
       tslib: 2.8.1
     transitivePeerDependencies:
       - react
       - react-dom
 
-  '@clerk/nextjs@7.3.3(next@16.2.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+  '@clerk/nextjs@7.6.2(next@16.2.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
-      '@clerk/backend': 3.4.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@clerk/react': 6.6.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@clerk/shared': 4.10.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@clerk/backend': 3.13.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@clerk/react': 6.12.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@clerk/shared': 4.25.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       next: 16.2.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
       server-only: 0.0.1
       tslib: 2.8.1
 
-  '@clerk/react@6.6.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+  '@clerk/react@6.12.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
-      '@clerk/shared': 4.10.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@clerk/shared': 4.25.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
       tslib: 2.8.1
 
-  '@clerk/shared@4.10.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+  '@clerk/shared@4.25.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
       '@tanstack/query-core': 5.100.9
       dequal: 2.0.3
       glob-to-regexp: 0.4.1
-      js-cookie: 3.0.5
-      std-env: 3.10.0
+      js-cookie: 3.0.7
     optionalDependencies:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
@@ -4290,7 +4286,7 @@ snapshots:
 
   jiti@2.7.0: {}
 
-  js-cookie@3.0.5: {}
+  js-cookie@3.0.7: {}
 
   js-tokens@4.0.0: {}
 
@@ -5193,8 +5189,6 @@ snapshots:
     dependencies:
       '@stablelib/base64': 1.0.1
       fast-sha256: 1.3.0
-
-  std-env@3.10.0: {}
 
   stop-iteration-iterator@1.1.0:
     dependencies:

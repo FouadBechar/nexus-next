@@ -12,7 +12,7 @@
   "dependencies": {
     "@ai-sdk/openai": "^3.0.63",
     "@ai-sdk/react": "^3.0.179",
-    "@clerk/nextjs": "^7.3.3",
+    "@clerk/nextjs": "^7.6.2",
     "@supabase/supabase-js": "^2.105.4",
     "ai": "^6.0.177",
     "next": "16.2.6",
