@@ -1,4 +1,9 @@
 import { logger } from "../logger";
+import {
+  createAttachmentEvent,
+  emitAttachmentEvent,
+  type AttachmentPipelineEventHandler,
+} from "./events";
 import { extractTextAttachment, isTextAttachment } from "./extractors/text";
 import type { AttachmentPipelineResult } from "./types";
 
@@ -26,6 +31,10 @@ export const ALLOWED_ATTACHMENT_MIME_TYPES = new Set([
   "text/markdown",
 ]);
 
+type RunAttachmentPipelineOptions = {
+  onEvent?: AttachmentPipelineEventHandler;
+};
+
 async function loadPdfExtractor() {
   const extractorPath = "./extractors/pdf";
 
@@ -46,35 +55,71 @@ function toExtractionStatus(extractedText: string) {
   return extractedText.trim() ? "readable" : "empty";
 }
 
+async function completeExtraction(
+  file: File,
+  result: AttachmentPipelineResult,
+  onEvent?: AttachmentPipelineEventHandler
+) {
+  await emitAttachmentEvent(
+    onEvent,
+    createAttachmentEvent(file, {
+      type: "extractionCompleted",
+      extractionStatus: result.extractionStatus,
+      extractionTruncated: result.extractionTruncated,
+      hasExtractedText: Boolean(result.extractedText?.trim()),
+      pipelineStatus: result.pipelineStatus,
+    })
+  );
+
+  return result;
+}
+
 export async function runAttachmentPipeline(
-  file: File
+  file: File,
+  options: RunAttachmentPipelineOptions = {}
 ): Promise<AttachmentPipelineResult> {
+  await emitAttachmentEvent(
+    options.onEvent,
+    createAttachmentEvent(file, {
+      type: "attachmentQueued",
+    })
+  );
+
   if (file.type.startsWith("image/")) {
-    return emptyResult();
+    return completeExtraction(file, emptyResult(), options.onEvent);
   }
+
+  await emitAttachmentEvent(
+    options.onEvent,
+    createAttachmentEvent(file, {
+      type: "extractionStarted",
+    })
+  );
 
   if (isTextAttachment(file)) {
     const extraction = await extractTextAttachment(file);
-
-    return {
+    const result: AttachmentPipelineResult = {
       extractedText: extraction.extractedText,
       extractionStatus: toExtractionStatus(extraction.extractedText),
       extractionTruncated: extraction.truncated,
       pipelineStatus: "completed",
     };
+
+    return completeExtraction(file, result, options.onEvent);
   }
 
   if (file.type === "application/pdf") {
     try {
       const { extractPdfAttachment } = await loadPdfExtractor();
       const extraction = await extractPdfAttachment(file);
-
-      return {
+      const result: AttachmentPipelineResult = {
         extractedText: extraction.extractedText,
         extractionStatus: toExtractionStatus(extraction.extractedText),
         extractionTruncated: extraction.truncated,
         pipelineStatus: "completed",
       };
+
+      return completeExtraction(file, result, options.onEvent);
     } catch (error) {
       logger.warn("PDF extraction failed.", {
         error,
@@ -82,8 +127,7 @@ export async function runAttachmentPipeline(
       });
       const { getPdfExtractionDetail, getPdfExtractionError } =
         await loadPdfExtractor();
-
-      return {
+      const result: AttachmentPipelineResult = {
         extractedText: "",
         extractionDetail: getPdfExtractionDetail(error),
         extractionError: getPdfExtractionError(error),
@@ -91,8 +135,20 @@ export async function runAttachmentPipeline(
         extractionTruncated: false,
         pipelineStatus: "failed",
       };
+
+      await emitAttachmentEvent(
+        options.onEvent,
+        createAttachmentEvent(file, {
+          type: "extractionFailed",
+          extractionDetail: result.extractionDetail,
+          extractionError: result.extractionError,
+          pipelineStatus: "failed",
+        })
+      );
+
+      return result;
     }
   }
 
-  return emptyResult();
+  return completeExtraction(file, emptyResult(), options.onEvent);
 }

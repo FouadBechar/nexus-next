@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import type { AttachmentPipelineEventType } from "../../../../lib/attachments/events";
 import { runAttachmentPipeline } from "../../../../lib/attachments/pipeline";
 
 describe("runAttachmentPipeline", () => {
@@ -39,5 +40,39 @@ describe("runAttachmentPipeline", () => {
       extractionTruncated: false,
       pipelineStatus: "completed",
     });
+  });
+
+  it("emits queued, started, and completed events for text extraction", async () => {
+    const file = new File(["Hello from events"], "events.txt", {
+      type: "text/plain",
+    });
+    const eventTypes: AttachmentPipelineEventType[] = [];
+
+    await runAttachmentPipeline(file, {
+      onEvent: (event) => {
+        eventTypes.push(event.type);
+      },
+    });
+
+    assert.deepEqual(eventTypes, [
+      "attachmentQueued",
+      "extractionStarted",
+      "extractionCompleted",
+    ]);
+  });
+
+  it("emits queued and completed events for image attachments", async () => {
+    const file = new File(["image-bytes"], "photo.png", {
+      type: "image/png",
+    });
+    const eventTypes: AttachmentPipelineEventType[] = [];
+
+    await runAttachmentPipeline(file, {
+      onEvent: (event) => {
+        eventTypes.push(event.type);
+      },
+    });
+
+    assert.deepEqual(eventTypes, ["attachmentQueued", "extractionCompleted"]);
   });
 });

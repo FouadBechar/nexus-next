@@ -13,8 +13,22 @@ import {
   runAttachmentPipeline,
 } from "../../../lib/attachments/pipeline";
 import { getSupabaseAdmin } from "../../../lib/supabase/server";
+import {
+  createAttachmentEvent,
+  emitAttachmentEvent,
+  type AttachmentPipelineEvent,
+} from "../../../lib/attachments/events";
+import { logger } from "../../../lib/logger";
 
 export const runtime = "nodejs";
+
+function logAttachmentEvent(event: AttachmentPipelineEvent) {
+  logger.info("Attachment pipeline event.", {
+    eventType: event.type,
+    fileName: event.fileName,
+    mimeType: event.mimeType,
+  });
+}
 
 function safeFileName(value: string) {
   return (
@@ -98,7 +112,9 @@ export async function POST(req: NextRequest) {
 
     if (messageError) throw messageError;
 
-    const pipelineResult = await runAttachmentPipeline(file);
+    const pipelineResult = await runAttachmentPipeline(file, {
+      onEvent: logAttachmentEvent,
+    });
 
     const attachmentId = crypto.randomUUID();
     const storagePath = `${userId}/${chatId}/${attachmentId}-${safeFileName(
@@ -117,6 +133,15 @@ export async function POST(req: NextRequest) {
         cause: uploadError,
       });
     }
+
+    await emitAttachmentEvent(
+      logAttachmentEvent,
+      createAttachmentEvent(file, {
+        type: "attachmentUploaded",
+        bucket: ATTACHMENTS_BUCKET,
+        storagePath,
+      })
+    );
 
     const { error: insertError } = await supabase
       .from("message_attachments")
