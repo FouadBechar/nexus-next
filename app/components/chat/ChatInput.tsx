@@ -161,6 +161,12 @@ export function ChatInput({
 
           <span>Nexus Next v1</span>
         </div>
+
+        {attachmentsEnabled && (
+          <span>
+            Uploaded file content is shared with the selected AI provider for analysis.
+          </span>
+        )}
       </div>
     </div>
   );

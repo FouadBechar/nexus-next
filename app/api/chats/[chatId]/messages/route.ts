@@ -6,7 +6,7 @@ import {
   toErrorResponse,
 } from "../../../../../lib/errors/api-error";
 import { getSupabaseAdmin } from "../../../../../lib/supabase/server";
-import type { Message } from "../../../../types/message";
+import { messagesSaveSchema } from "../../../../../lib/validation/chat";
 
 type RouteContext = {
   params: Promise<{
@@ -24,37 +24,19 @@ async function getCurrentUserId() {
   return userId;
 }
 
-function isMessageId(value: unknown) {
-  return (
-    value === undefined ||
-    (typeof value === "string" &&
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        value
-      ))
-  );
-}
-
-function isMessage(value: unknown): value is Message {
-  if (!value || typeof value !== "object") return false;
-
-  const message = value as Partial<Message>;
-
-  return (
-    isMessageId(message.id) &&
-    (message.role === "user" || message.role === "assistant") &&
-    typeof message.content === "string"
-  );
-}
-
 export async function PUT(req: NextRequest, { params }: RouteContext) {
   try {
     const userId = await getCurrentUserId();
     const { chatId } = await params;
-    const { messages, title } = await req.json();
+    const parsed = messagesSaveSchema.safeParse(await req.json());
 
-    if (!Array.isArray(messages) || !messages.every(isMessage)) {
-      throw new ValidationError("Messages must be a valid message array.");
+    if (!parsed.success) {
+      throw new ValidationError(
+        "Messages must contain at most 80 valid messages with supported fields."
+      );
     }
+
+    const { messages, title } = parsed.data;
 
     const supabase = getSupabaseAdmin();
     const now = new Date().toISOString();
@@ -74,7 +56,7 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
       });
     }
 
-    const normalizedMessages = messages.map((message: Message) => ({
+    const normalizedMessages = messages.map((message) => ({
       ...message,
       id: message.id || crypto.randomUUID(),
     }));

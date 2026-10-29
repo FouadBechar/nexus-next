@@ -136,7 +136,7 @@ Nexus Next has been tested successfully on:
 Tested with:
 
 * Node.js 22 LTS
-* pnpm 11
+* pnpm 12.3.4 (pinned in `package.json`)
 
 ---
 
@@ -161,7 +161,7 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
 CLERK_SECRET_KEY=
 
 OPENROUTER_API_KEY=
-GOOGLE_API_KEY=
+GEMINI_API_KEY=
 
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
@@ -189,6 +189,7 @@ pnpm dev
 pnpm build
 pnpm start
 pnpm lint
+pnpm test
 ```
 
 ---
@@ -236,7 +237,7 @@ proxy.ts
 
   * OpenRouter integration
 
-* `lib/ai/providers/google.ts`
+* `lib/ai/providers/gemini.ts`
 
   * Google AI Studio integration
 

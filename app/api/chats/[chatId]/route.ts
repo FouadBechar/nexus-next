@@ -6,6 +6,7 @@ import {
   toErrorResponse,
 } from "../../../../lib/errors/api-error";
 import { getSupabaseAdmin } from "../../../../lib/supabase/server";
+import { chatTitleSchema } from "../../../../lib/validation/chat";
 
 type RouteContext = {
   params: Promise<{
@@ -27,18 +28,16 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
   try {
     const userId = await getCurrentUserId();
     const { chatId } = await params;
-    const { title } = await req.json();
+    const parsed = chatTitleSchema.safeParse(await req.json());
 
-    const trimmedTitle = title?.trim();
-
-    if (!trimmedTitle) {
-      throw new ValidationError("Title is required.");
+    if (!parsed.success) {
+      throw new ValidationError("Title must be between 1 and 160 characters.");
     }
 
     const { error } = await getSupabaseAdmin()
       .from("chats")
       .update({
-        title: trimmedTitle,
+        title: parsed.data.title,
         updated_at: new Date().toISOString(),
       })
       .eq("id", chatId)

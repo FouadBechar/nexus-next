@@ -12,7 +12,9 @@ import {
   MAX_ATTACHMENT_FILE_SIZE,
   runAttachmentPipeline,
 } from "../../../lib/attachments/pipeline";
+import { hasExpectedFileSignature } from "../../../lib/attachments/validation";
 import { getSupabaseAdmin } from "../../../lib/supabase/server";
+import { attachmentUploadSchema } from "../../../lib/validation/chat";
 import {
   createAttachmentEvent,
   emitAttachmentEvent,
@@ -59,11 +61,9 @@ export async function POST(req: NextRequest) {
     const messageId = formData.get("messageId");
     const file = formData.get("file");
 
-    if (
-      typeof chatId !== "string" ||
-      typeof content !== "string" ||
-      typeof messageId !== "string"
-    ) {
+    const parsed = attachmentUploadSchema.safeParse({ chatId, content, messageId });
+
+    if (!parsed.success) {
       throw new ValidationError("chatId, content, and messageId are required.");
     }
 
@@ -79,12 +79,21 @@ export async function POST(req: NextRequest) {
       throw new ValidationError("File size must be 10 MB or less.");
     }
 
+    if (file.size === 0 || !(await hasExpectedFileSignature(file))) {
+      throw new ValidationError(
+        "The uploaded file does not match its declared type or is empty."
+      );
+    }
+
+    const { chatId: parsedChatId, content: parsedContent, messageId: parsedMessageId } =
+      parsed.data;
+
     const supabase = getSupabaseAdmin();
 
     const { data: chat, error: chatError } = await supabase
       .from("chats")
       .select("id")
-      .eq("id", chatId)
+      .eq("id", parsedChatId)
       .eq("user_id", userId)
       .single();
 
@@ -98,11 +107,11 @@ export async function POST(req: NextRequest) {
 
     const { error: messageError } = await supabase.from("messages").upsert(
       {
-        id: messageId,
-        chat_id: chatId,
+        id: parsedMessageId,
+        chat_id: parsedChatId,
         user_id: userId,
         role: "user",
-        content,
+        content: parsedContent,
         created_at: new Date().toISOString(),
       },
       {
@@ -117,7 +126,7 @@ export async function POST(req: NextRequest) {
     });
 
     const attachmentId = crypto.randomUUID();
-    const storagePath = `${userId}/${chatId}/${attachmentId}-${safeFileName(
+    const storagePath = `${userId}/${parsedChatId}/${attachmentId}-${safeFileName(
       file.name
     )}`;
 
@@ -148,8 +157,8 @@ export async function POST(req: NextRequest) {
       .insert({
         id: attachmentId,
         user_id: userId,
-        chat_id: chatId,
-        message_id: messageId,
+        chat_id: parsedChatId,
+        message_id: parsedMessageId,
         bucket: ATTACHMENTS_BUCKET,
         storage_path: storagePath,
         file_name: file.name,

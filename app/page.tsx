@@ -36,6 +36,7 @@ export default function Home() {
     chats,
     createNewChat,
     deleteChat,
+    persistenceError,
     renameChat,
     setActiveChatId,
     updateChatMessages,
@@ -211,7 +212,7 @@ export default function Home() {
         <ChatInput
           attachmentsEnabled={Boolean(isSignedIn)}
           canExport={Boolean(activeChat?.messages.length)}
-          error={error}
+          error={error || persistenceError}
           input={input}
           loading={loading}
           modelSupportsImages={selectedModelSupportsImages}

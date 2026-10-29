@@ -28,6 +28,7 @@ Rules:
 - Keep `.env.example` as placeholders only.
 - Set `NEXUS_REQUIRE_AUTH_FOR_CHAT=true` if anonymous users should not be able to call the AI route.
 - Keep guest chat limits low enough to protect provider spend.
+- The built-in rate limiter is process-local. Use a shared, atomic limiter before relying on limits across multiple Vercel instances.
 
 ## Clerk
 
@@ -52,7 +53,9 @@ Rules:
 
 ## Vercel
 
+- Run `pnpm install --frozen-lockfile`.
 - Run `pnpm lint`.
+- Run `pnpm test`.
 - Run `pnpm build`.
 - Run the smoke checklist in `docs/smoke-test.md`.
 - Test the deployed app on desktop and mobile.

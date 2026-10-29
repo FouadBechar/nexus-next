@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useReducer } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import type { Chat } from "../types/chat";
 import type { Message } from "../types/message";
 
@@ -176,7 +176,19 @@ async function createRemoteChat(chat: Chat) {
 
 export function useChats(userId?: string | null, authLoaded = true) {
   const [state, dispatch] = useReducer(chatReducer, initialState);
+  const [persistenceError, setPersistenceError] = useState("");
   const remoteEnabled = Boolean(userId);
+
+  const reportPersistenceError = useCallback((error: unknown) => {
+    console.error(error);
+    setPersistenceError(
+      "Your changes are visible here but could not be saved. Check your connection and try again."
+    );
+  }, []);
+
+  const clearPersistenceError = useCallback(() => {
+    setPersistenceError("");
+  }, []);
 
   useEffect(() => {
     if (!authLoaded) return;
@@ -211,7 +223,7 @@ export function useChats(userId?: string | null, authLoaded = true) {
           dispatch({ type: "hydrate", chats: savedChats });
         }
       } catch (error) {
-        console.error(error);
+        reportPersistenceError(error);
 
         if (!cancelled) {
           const savedChats = parseSavedChats(localStorage.getItem(CHAT_STORAGE_KEY));
@@ -225,7 +237,7 @@ export function useChats(userId?: string | null, authLoaded = true) {
     return () => {
       cancelled = true;
     };
-  }, [authLoaded, remoteEnabled]);
+  }, [authLoaded, remoteEnabled, reportPersistenceError]);
 
   useEffect(() => {
     if (!state.hydrated || remoteEnabled) return;
@@ -247,11 +259,13 @@ export function useChats(userId?: string | null, authLoaded = true) {
     });
 
     if (remoteEnabled) {
-      createRemoteChat(newChat).catch(console.error);
+      void createRemoteChat(newChat)
+        .then(clearPersistenceError)
+        .catch(reportPersistenceError);
     }
 
     return newChat;
-  }, [remoteEnabled]);
+  }, [clearPersistenceError, remoteEnabled, reportPersistenceError]);
 
   const deleteChat = useCallback((id: string) => {
     dispatch({
@@ -260,11 +274,13 @@ export function useChats(userId?: string | null, authLoaded = true) {
     });
 
     if (remoteEnabled) {
-      fetch(`/api/chats/${id}`, {
+      void requestJson(`/api/chats/${id}`, {
         method: "DELETE",
-      }).catch(console.error);
+      })
+        .then(clearPersistenceError)
+        .catch(reportPersistenceError);
     }
-  }, [remoteEnabled]);
+  }, [clearPersistenceError, remoteEnabled, reportPersistenceError]);
 
   const renameChat = useCallback((id: string, title: string) => {
     const trimmedTitle = title.trim();
@@ -278,7 +294,7 @@ export function useChats(userId?: string | null, authLoaded = true) {
     });
 
     if (remoteEnabled) {
-      fetch(`/api/chats/${id}`, {
+      void requestJson(`/api/chats/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -286,9 +302,11 @@ export function useChats(userId?: string | null, authLoaded = true) {
         body: JSON.stringify({
           title: trimmedTitle,
         }),
-      }).catch(console.error);
+      })
+        .then(clearPersistenceError)
+        .catch(reportPersistenceError);
     }
-  }, [remoteEnabled]);
+  }, [clearPersistenceError, remoteEnabled, reportPersistenceError]);
 
   const updateChatMessages = useCallback(
     (id: string, messages: Message[], title?: string) => {
@@ -300,7 +318,7 @@ export function useChats(userId?: string | null, authLoaded = true) {
       });
 
       if (remoteEnabled) {
-        fetch(`/api/chats/${id}/messages`, {
+        void requestJson(`/api/chats/${id}/messages`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -309,10 +327,12 @@ export function useChats(userId?: string | null, authLoaded = true) {
             messages,
             title,
           }),
-        }).catch(console.error);
+        })
+          .then(clearPersistenceError)
+          .catch(reportPersistenceError);
       }
     },
-    [remoteEnabled]
+    [clearPersistenceError, remoteEnabled, reportPersistenceError]
   );
 
   const setActiveChatId = useCallback((id: string) => {
@@ -326,6 +346,7 @@ export function useChats(userId?: string | null, authLoaded = true) {
     activeChat,
     activeChatId: state.activeChatId,
     chats: state.chats,
+    persistenceError,
     createNewChat,
     deleteChat,
     renameChat,

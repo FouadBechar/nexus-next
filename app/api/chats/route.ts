@@ -1,7 +1,12 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest } from "next/server";
-import { AuthError, toErrorResponse } from "../../../lib/errors/api-error";
+import {
+  AuthError,
+  ValidationError,
+  toErrorResponse,
+} from "../../../lib/errors/api-error";
 import { getSupabaseAdmin } from "../../../lib/supabase/server";
+import { chatCreateSchema } from "../../../lib/validation/chat";
 import type { Chat } from "../../types/chat";
 import type { Message } from "../../types/message";
 
@@ -151,7 +156,13 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const userId = await getCurrentUserId();
-    const { id, title } = await req.json();
+    const parsed = chatCreateSchema.safeParse(await req.json());
+
+    if (!parsed.success) {
+      throw new ValidationError("Invalid chat request.");
+    }
+
+    const { id, title } = parsed.data;
     const supabase = getSupabaseAdmin();
     const now = new Date().toISOString();
 
@@ -160,7 +171,7 @@ export async function POST(req: NextRequest) {
       .insert({
         ...(id ? { id } : {}),
         user_id: userId,
-        title: title?.trim() || "New Chat",
+        title: title || "New Chat",
         created_at: now,
         updated_at: now,
       })
