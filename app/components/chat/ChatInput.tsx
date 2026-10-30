@@ -1,6 +1,7 @@
 "use client";
 
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
+import { useSpeechRecognition } from "../../hooks/useSpeechRecognition";
 import { getAttachmentDisplayInfo } from "../../../lib/utils/attachments";
 
 type ChatInputProps = {
@@ -33,8 +34,19 @@ export function ChatInput({
   onStop,
 }: ChatInputProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const dictationPrefixRef = useRef("");
   const [files, setFiles] = useState<File[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const {
+    error: dictationError,
+    isListening,
+    isSupported: supportsDictation,
+    startListening,
+    stopListening,
+  } = useSpeechRecognition((transcript) => {
+    const separator = dictationPrefixRef.current.trim() && transcript ? " " : "";
+    onChange(`${dictationPrefixRef.current}${separator}${transcript}`);
+  });
 
   useEffect(() => {
     if (!textareaRef.current) return;
@@ -46,8 +58,19 @@ export function ChatInput({
   }, [input]);
 
   async function handleSend() {
+    stopListening();
     await onSend(files);
     setFiles([]);
+  }
+
+  function handleDictation() {
+    if (isListening) {
+      stopListening();
+      return;
+    }
+
+    dictationPrefixRef.current = input.trimEnd();
+    startListening();
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -68,6 +91,12 @@ export function ChatInput({
       {error && (
         <div className="mb-3 rounded-xl border border-red-500/40 bg-red-950/40 px-4 py-3 text-sm text-red-200">
           {error}
+        </div>
+      )}
+
+      {dictationError && (
+        <div className="mb-3 rounded-xl border border-amber-500/40 bg-amber-950/30 px-4 py-3 text-sm text-amber-100">
+          {dictationError}
         </div>
       )}
 
@@ -120,6 +149,23 @@ export function ChatInput({
           onKeyDown={handleKeyDown}
         />
 
+        {supportsDictation && (
+          <button
+            type="button"
+            onClick={handleDictation}
+            disabled={loading}
+            aria-pressed={isListening}
+            className={`rounded-2xl border px-4 py-4 text-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${
+              isListening
+                ? "border-red-500 bg-red-500/20 text-red-100 hover:bg-red-500/30"
+                : "border-gray-800 text-gray-300 hover:bg-gray-900"
+            }`}
+            title={isListening ? "Stop dictation" : "Start voice dictation"}
+          >
+            {isListening ? "Stop mic" : "Voice"}
+          </button>
+        )}
+
         {loading ? (
           <button
             onClick={onStop}
@@ -165,6 +211,14 @@ export function ChatInput({
         {attachmentsEnabled && (
           <span>
             Uploaded file content is shared with the selected AI provider for analysis.
+          </span>
+        )}
+
+        {supportsDictation && (
+          <span className={isListening ? "text-red-300" : undefined}>
+            {isListening
+              ? "Listening… select Stop mic when you are done."
+              : "Voice dictation is handled by your browser."}
           </span>
         )}
       </div>

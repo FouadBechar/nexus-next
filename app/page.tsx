@@ -15,6 +15,7 @@ import { useAutoScroll } from "./hooks/useAutoScroll";
 import { useChatSettings } from "./hooks/useChatSettings";
 import { useChats } from "./hooks/useChats";
 import { useStreamingChat } from "./hooks/useStreamingChat";
+import { useSpeechSynthesis } from "./hooks/useSpeechSynthesis";
 import { MODELS, modelSupportsImages } from "../lib/ai/models";
 import {
   exportChatAsJson,
@@ -51,6 +52,12 @@ export default function Home() {
     sendMessage,
     stopGeneration,
   } = useStreamingChat();
+  const {
+    isSupported: speechSynthesisSupported,
+    speakingMessageId,
+    speak,
+    stopSpeaking,
+  } = useSpeechSynthesis();
 
   useAutoScroll(
     bottomRef,
@@ -125,6 +132,18 @@ export default function Home() {
     navigator.clipboard.writeText(text);
   }, []);
 
+  const handleToggleSpeech = useCallback(
+    (messageId: string, content: string) => {
+      if (speakingMessageId === messageId) {
+        stopSpeaking();
+        return;
+      }
+
+      speak(messageId, content);
+    },
+    [speak, speakingMessageId, stopSpeaking]
+  );
+
   const regenerateLast = useCallback(() => {
     if (!activeChat) return;
 
@@ -193,14 +212,23 @@ export default function Home() {
         {activeChat?.messages.length === 0 && <EmptyState />}
 
         <div className="min-w-0 flex-1 space-y-5 overflow-y-auto overflow-x-hidden bg-zinc-950 p-4 sm:space-y-6 sm:p-6">
-          {activeChat?.messages.map((message, index) => (
-            <ChatMessage
-              key={message.id ?? `${message.createdAt ?? index}-${message.role}`}
-              message={message}
-              modelSupportsImages={selectedModelSupportsImages}
-              onCopy={copyText}
-            />
-          ))}
+          {activeChat?.messages.map((message, index) => {
+            const messageId =
+              message.id ?? `${message.createdAt ?? index}-${message.role}`;
+
+            return (
+              <ChatMessage
+                key={messageId}
+                isSpeaking={speakingMessageId === messageId}
+                message={message}
+                messageId={messageId}
+                modelSupportsImages={selectedModelSupportsImages}
+                onCopy={copyText}
+                onToggleSpeech={handleToggleSpeech}
+                speechSupported={speechSynthesisSupported}
+              />
+            );
+          })}
 
           <StreamingMessage content={currentResponse} />
 

@@ -6,15 +6,23 @@ import { MarkdownRenderer } from "../../../lib/markdown/renderer";
 import { getAttachmentDisplayInfo } from "../../../lib/utils/attachments";
 
 type ChatMessageProps = {
+  isSpeaking?: boolean;
   message: Message;
+  messageId: string;
   modelSupportsImages?: boolean;
   onCopy: (text: string) => void;
+  onToggleSpeech?: (messageId: string, content: string) => void;
+  speechSupported?: boolean;
 };
 
 export const ChatMessage = memo(function ChatMessage({
+  isSpeaking = false,
   message,
+  messageId,
   modelSupportsImages = false,
   onCopy,
+  onToggleSpeech,
+  speechSupported = false,
 }: ChatMessageProps) {
   const createdAtLabel = useMemo(
     () => (message.createdAt ? new Date(message.createdAt).toLocaleTimeString() : ""),
@@ -53,12 +61,24 @@ export const ChatMessage = memo(function ChatMessage({
             {createdAtLabel}
           </span>
 
-          <button
-            onClick={() => onCopy(message.content)}
-            className="rounded-md px-2 py-1 text-xs font-medium text-gray-400 transition hover:bg-white/5 hover:text-white"
-          >
-            Copy
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => onCopy(message.content)}
+              className="rounded-md px-2 py-1 text-xs font-medium text-gray-400 transition hover:bg-white/5 hover:text-white"
+            >
+              Copy
+            </button>
+
+            {message.role === "assistant" && speechSupported && onToggleSpeech && (
+              <button
+                onClick={() => onToggleSpeech(messageId, message.content)}
+                aria-pressed={isSpeaking}
+                className="rounded-md px-2 py-1 text-xs font-medium text-gray-400 transition hover:bg-white/5 hover:text-white"
+              >
+                {isSpeaking ? "Stop reading" : "Read aloud"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
